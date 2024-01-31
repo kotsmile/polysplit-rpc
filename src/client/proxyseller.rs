@@ -1,33 +1,26 @@
 use std::collections::HashMap;
 
 use anyhow::{anyhow, bail, Result};
-use async_trait::async_trait;
 use reqwest::Client;
 use serde::Deserialize;
 
-use crate::{models::proxy::ProxyConfig, traits::ProxyClient};
+use crate::models::proxy::ProxyConfig;
 
+#[derive(Clone)]
 pub struct ProxysellerOrder(pub String, pub String);
-
-pub struct ProxysellerClient {
-    api_client: Client,
-    api_key: String,
-    orders: Vec<ProxysellerOrder>,
-    timeout_ms: i32,
-}
 
 const PROXYSELLER_BASE_URL_API: &'static str = "https://proxy-seller.com/personal/api/v1";
 
 #[derive(Deserialize)]
 struct ProxysellerFetchProxiesDataElement {
-    // id: String,
-    // order_id: String,
     ip: String,
-    // protocol: String,
     port_http: i32,
-    // port_socks: i32,
     login: String,
     password: String,
+    // id: String,
+    // order_id: String,
+    // protocol: String,
+    // port_socks: i32,
     // auth_ip: String,
     // country: String,
     // status: String,
@@ -57,6 +50,13 @@ struct ProxysellerResponse<D> {
     data: D,
 }
 
+#[derive(Clone)]
+pub struct ProxysellerClient {
+    api_key: String,
+    orders: Vec<ProxysellerOrder>,
+    timeout_ms: i32,
+}
+
 impl ProxysellerClient {
     pub fn new(
         proxyseller_api_key: String,
@@ -64,22 +64,17 @@ impl ProxysellerClient {
         timeout_ms: i32,
     ) -> Self {
         Self {
-            api_client: reqwest::Client::new(),
             api_key: proxyseller_api_key,
             orders,
             timeout_ms,
         }
     }
-}
 
-#[async_trait]
-impl ProxyClient for ProxysellerClient {
-    async fn fetch_proxies(&self) -> Result<Vec<ProxyConfig>> {
+    pub async fn fetch_proxies(&self) -> Result<Vec<ProxyConfig>> {
         let mut proxy_configs: Vec<ProxyConfig> = Vec::new();
         for order in &self.orders {
             let params = [("latest", "y"), ("orderId", &order.1)];
-            let response = self
-                .api_client
+            let response = reqwest::Client::new()
                 .get(format!(
                     "{PROXYSELLER_BASE_URL_API}/{api_key}/proxy/list/{order_type}",
                     api_key = self.api_key,
@@ -120,7 +115,7 @@ impl ProxyClient for ProxysellerClient {
         Ok(proxy_configs)
     }
 
-    async fn check_proxy(&self, proxy_config: &ProxyConfig) -> Result<bool> {
+    pub async fn check_proxy(&self, proxy_config: &ProxyConfig) -> Result<bool> {
         let proxy_string = format!(
             "{username}:{password}@{host}:{port}",
             username = proxy_config.username,
@@ -129,8 +124,7 @@ impl ProxyClient for ProxysellerClient {
             port = proxy_config.port
         );
         let params = [("proxy", proxy_string)];
-        let response = self
-            .api_client
+        let response = reqwest::Client::new()
             .get(format!(
                 "{PROXYSELLER_BASE_URL_API}/{api_key}/tools/proxy/check",
                 api_key = self.api_key

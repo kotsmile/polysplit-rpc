@@ -1,6 +1,6 @@
 use anyhow::{anyhow, bail, Result};
 
-use crate::{models::proxy::ProxyConfig, traits::ProxyClient};
+use crate::{client::proxyseller::ProxysellerClient, models::proxy::ProxyConfig};
 
 #[derive(PartialEq, Eq)]
 enum ProxyServiceState {
@@ -10,14 +10,14 @@ enum ProxyServiceState {
 }
 
 pub struct ProxyService {
-    proxy_client: Box<dyn ProxyClient>,
+    proxy_client: Box<ProxysellerClient>,
     proxy_id: usize,
     proxies: Vec<ProxyConfig>,
     state: ProxyServiceState,
 }
 
 impl ProxyService {
-    pub fn new(proxy_client: Box<dyn ProxyClient>) -> Self {
+    pub fn new(proxy_client: Box<ProxysellerClient>) -> Self {
         Self {
             proxy_client,
             proxy_id: 0,

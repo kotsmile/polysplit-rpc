@@ -1,7 +1,7 @@
 use rocket::{get, serde::json::Json};
 use rocket_okapi::openapi;
 
-use super::util::ResponseResult;
+use crate::util::controllers::ResponseResult;
 
 #[openapi(tag = "Status")]
 #[get("/status/health")]

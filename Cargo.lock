@@ -1284,6 +1284,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "num-derive"
+version = "0.3.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "876a53fff98e03a936a674b29568b0e605f06b29372c2489ff4de23f1949743d"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 1.0.109",
+]
+
+[[package]]
 name = "num-integer"
 version = "0.1.45"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1490,12 +1501,15 @@ dependencies = [
  "mockall",
  "moka",
  "pwhash",
+ "regex",
+ "regex-macro",
  "reqwest",
  "rocket",
  "rocket_okapi",
  "schemars",
  "serde",
  "serde_json",
+ "tokio-cron-scheduler",
  "uuid 1.7.0",
 ]
 
@@ -1719,6 +1733,16 @@ dependencies = [
  "aho-corasick",
  "memchr",
  "regex-syntax 0.8.2",
+]
+
+[[package]]
+name = "regex-macro"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "12fa36e7add16db296640bba993a65dae2a0088a8e5cd5f935c8bfbd3710145b"
+dependencies = [
+ "once_cell",
+ "regex",
 ]
 
 [[package]]
@@ -2399,6 +2423,21 @@ dependencies = [
  "socket2",
  "tokio-macros",
  "windows-sys 0.48.0",
+]
+
+[[package]]
+name = "tokio-cron-scheduler"
+version = "0.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d1215c91d6f74868e18a65bda99853e012cfb2a0e42f3438382e318277da76a0"
+dependencies = [
+ "chrono",
+ "cron",
+ "num-derive",
+ "num-traits",
+ "tokio",
+ "tracing",
+ "uuid 1.7.0",
 ]
 
 [[package]]
