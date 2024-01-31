@@ -1,11 +1,11 @@
 use std::collections::HashMap;
 
 use anyhow::{anyhow, bail, Result};
+use async_trait::async_trait;
 use reqwest::Client;
-use rocket::futures::FutureExt;
 use serde::Deserialize;
 
-use crate::models::proxy::ProxyConfig;
+use crate::{models::proxy::ProxyConfig, traits::ProxyClient};
 
 pub struct ProxysellerOrder(pub String, pub String);
 
@@ -20,8 +20,8 @@ const PROXYSELLER_BASE_URL_API: &'static str = "https://proxy-seller.com/persona
 
 #[derive(Deserialize)]
 struct ProxysellerFetchProxiesDataElement {
-    id: String,
-    order_id: String,
+    // id: String,
+    // order_id: String,
     ip: String,
     // protocol: String,
     port_http: i32,
@@ -55,7 +55,6 @@ struct ProxysellerCheckProxyData {
 struct ProxysellerResponse<D> {
     status: String,
     data: D,
-    errors: Vec<String>,
 }
 
 impl ProxysellerClient {
@@ -71,8 +70,11 @@ impl ProxysellerClient {
             timeout_ms,
         }
     }
+}
 
-    pub async fn fetch_proxies(&self) -> Result<Vec<ProxyConfig>> {
+#[async_trait]
+impl ProxyClient for ProxysellerClient {
+    async fn fetch_proxies(&self) -> Result<Vec<ProxyConfig>> {
         let mut proxy_configs: Vec<ProxyConfig> = Vec::new();
         for order in &self.orders {
             let params = [("latest", "y"), ("orderId", &order.1)];
@@ -83,7 +85,7 @@ impl ProxysellerClient {
                     api_key = self.api_key,
                     order_type = order.0
                 ))
-                .form(&params)
+                .query(&params)
                 .send()
                 .await
                 .map_err(|err| anyhow!("failed to request proxy list: {err}"))?
@@ -118,7 +120,7 @@ impl ProxysellerClient {
         Ok(proxy_configs)
     }
 
-    pub async fn check_proxy(&self, proxy_config: &ProxyConfig) -> Result<bool> {
+    async fn check_proxy(&self, proxy_config: &ProxyConfig) -> Result<bool> {
         let proxy_string = format!(
             "{username}:{password}@{host}:{port}",
             username = proxy_config.username,
@@ -133,7 +135,7 @@ impl ProxysellerClient {
                 "{PROXYSELLER_BASE_URL_API}/{api_key}/tools/proxy/check",
                 api_key = self.api_key
             ))
-            .form(&params)
+            .query(&params)
             .send()
             .await
             .map_err(|err| anyhow!("failed to request check for proxy: {err}"))?
@@ -145,6 +147,6 @@ impl ProxysellerClient {
             bail!("check response status not equal success")
         }
 
-        Ok(response.data.time < self.timeout_ms)
+        Ok(response.data.valid && response.data.time < self.timeout_ms)
     }
 }
