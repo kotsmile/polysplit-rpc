@@ -1,0 +1,4 @@
+target/
+.env
+!.sqlx/
+tarpaulin-report.html
