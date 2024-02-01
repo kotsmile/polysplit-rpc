@@ -1,9 +1,9 @@
-use std::{collections::HashMap, sync::Arc, time::Duration};
+use std::{cmp::Ordering, collections::HashMap, sync::Arc, time::Duration};
 
 use rocket::tokio::sync::RwLock;
 
 use crate::services::{
-    evm_rpc::{EvmRpcService, RpcMetric},
+    evm_rpc::{EvmRpcService, Metric, RpcMetric},
     proxy::ProxyService,
 };
 
@@ -66,8 +66,37 @@ impl RpcFeedLib {
                 rpc_to_metric.insert(rpc.to_owned(), metric);
             }
 
+            let mut rpcs = Vec::from_iter(rpc_to_metric.iter());
+            rpcs.sort_by(|&(_, a), &(_, b)| {
+                let RpcMetric::Ok(a) = a else {
+                    return Ordering::Greater;
+                };
+                let RpcMetric::Ok(b) = b else {
+                    return Ordering::Less;
+                };
+
+                if a.response_time_ms > b.response_time_ms {
+                    Ordering::Less
+                } else if a.response_time_ms < b.response_time_ms {
+                    Ordering::Greater
+                } else {
+                    Ordering::Equal
+                }
+            });
+
+            let rpcs: Vec<(String, Metric)> = rpcs
+                .iter()
+                .filter_map(|&(rpc, metric)| {
+                    let RpcMetric::Ok(metric) = metric else {
+                        return None;
+                    };
+
+                    Some((rpc.clone(), metric.clone()))
+                })
+                .collect();
+
             self.evm_rpc_service
-                .set_rpcs_for_chain_id(chain_id, rpcs.clone())
+                .set_rpcs_for_chain_id(chain_id, rpcs)
                 .await;
         }
     }

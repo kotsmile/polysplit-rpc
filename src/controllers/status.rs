@@ -5,6 +5,6 @@ use crate::util::controllers::ResponseResult;
 
 #[openapi(tag = "Status")]
 #[get("/status/health")]
-pub fn get_health() -> ResponseResult<()> {
-    Ok(Json(()))
+pub fn get_health() -> ResponseResult<String> {
+    Ok(Json(String::from("healthy")))
 }

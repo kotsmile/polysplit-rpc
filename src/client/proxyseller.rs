@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 
 use anyhow::{anyhow, bail, Result};
-use reqwest::Client;
 use serde::Deserialize;
 
 use crate::models::proxy::ProxyConfig;

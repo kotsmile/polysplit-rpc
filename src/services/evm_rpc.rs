@@ -46,9 +46,14 @@ struct EvmRpcTestResponse {
     result: String,
 }
 
+#[derive(Debug, Clone, Copy)]
+pub struct Metric {
+    pub response_time_ms: u128,
+}
+
 #[derive(Debug)]
 pub enum RpcMetric {
-    Ok { response_time_ms: u128 },
+    Ok(Metric),
     Error(String),
 }
 
@@ -193,32 +198,21 @@ impl EvmRpcService {
         }
 
         let response_time_ms = total_time / (request_tries - failed) as u128;
-        return RpcMetric::Ok { response_time_ms };
+        return RpcMetric::Ok(Metric { response_time_ms });
     }
 
     pub async fn fetch_rpcs(&self) -> AnyhowResult<HashMap<String, Vec<String>>> {
         self.chainlist_client.fetch_rpcs().await
     }
 
-    pub async fn set_rpcs_for_chain_id(&self, chain_id: &str, rpcs: Vec<String>) {
+    pub async fn set_rpcs_for_chain_id(&self, chain_id: &str, rpcs: Vec<(String, Metric)>) {
         self.cache_repo
             .write()
             .await
             .set_rpcs_for_chain_id(chain_id, rpcs)
     }
 
-    pub async fn get_rpcs_for_chain_id(&self, chain_id: &str) -> Option<Vec<String>> {
+    pub async fn get_rpcs_for_chain_id(&self, chain_id: &str) -> Option<Vec<(String, Metric)>> {
         self.cache_repo.read().await.get_rpcs_for_chain_id(chain_id)
-    }
-
-    pub async fn set_score_for_rpc(&self, chain_id: &str, score: i32) {
-        self.cache_repo
-            .write()
-            .await
-            .set_score_for_rpc(chain_id, score)
-    }
-
-    pub async fn get_score_for_rpc(&self, chain_id: &str) -> Option<i32> {
-        self.cache_repo.read().await.get_score_for_rpc(chain_id)
     }
 }

@@ -55,6 +55,10 @@ impl ChainlistClient {
             };
 
             let url: &str = &caps.get(1).map(|m| m.as_str()).expect("unreachable");
+
+            if String::from(url).contains("polysplit") {
+                continue;
+            }
             chain_to_rpc
                 .entry(chain_id.to_owned())
                 .or_insert_with(Vec::new)

@@ -33,21 +33,22 @@ pub async fn post_chain_v1(
         log::error!("failed to get rpcs for chainId {chain_id}");
         return Err(ResponseError {
             status: Status::InternalServerError,
-            error: "Internal error".to_string(),
+            error: format!("No rpc for provided chainId {chain_id}"),
         });
     };
 
     let rpc_call = rpc_call.into_inner();
-    for rpc in &rpcs {
-        let response = evm_rpc_service
-            // TODO(@kotsmile): add proxy handling
-            .rpc_request(rpc, None, &rpc_call, config_repo.feed_max_timeout)
-            .await;
+    for i in 1..3 {
+        for rpc in &rpcs {
+            let response = evm_rpc_service
+                // TODO(@kotsmile): add proxy handling
+                .rpc_request(&rpc.0, None, &rpc_call, config_repo.feed_max_timeout * i)
+                .await;
 
-        match response {
-            Ok(val) => return Ok(Json(val)),
-            // TODO(@kotsmile): add error case
-            _ => {}
+            match response {
+                Ok(val) => return Ok(Json(val)),
+                _ => {}
+            }
         }
     }
 

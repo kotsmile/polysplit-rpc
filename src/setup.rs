@@ -9,12 +9,6 @@ use crate::repo::config::ConfigRepo;
 use crate::services::evm_rpc::EvmRpcService;
 use crate::services::proxy::ProxyService;
 
-// let proxy_service = Arc::new(RwLock::new(ProxyService::new(proxyseller_client)));
-// let evm_rpc_service = Arc::new(EvmRpcService::new(
-//     cache_repo.clone(),
-//     chainlist_client.clone(),
-//     config_repo.supported_chain_ids.clone(),
-// ));
 pub fn setup_app(
     evm_rpc_service: Arc<EvmRpcService>,
     proxy_service: Arc<RwLock<ProxyService>>,
