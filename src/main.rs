@@ -2,14 +2,11 @@
 use std::sync::Arc;
 
 use anyhow::{anyhow, Result};
-use cron::run_crons;
-use libs::{proxy_updater::ProxyUpdaterLib, rpc_feed::RpcFeedLib};
 use rocket::tokio::sync::RwLock;
 
 mod client;
 mod controllers;
-mod cron;
-mod libs;
+mod crons;
 mod models;
 mod repo;
 mod services;
@@ -50,17 +47,10 @@ async fn main() -> Result<()> {
         chainlist_client.clone(),
         config_repo.supported_chain_ids.clone(),
     ));
-    let rpc_feed_lib = Arc::new(RpcFeedLib::new(
+
+    crons::run_crons(
         evm_rpc_service.clone(),
         proxy_service.clone(),
-        config_repo.supported_chain_ids.clone(),
-        config_repo.feed_max_timeout.clone(),
-    ));
-    let proxy_updater_lib = Arc::new(ProxyUpdaterLib::new(proxy_service.clone()));
-
-    run_crons(
-        rpc_feed_lib.clone(),
-        proxy_updater_lib.clone(),
         config_repo.clone(),
     )
     .await?;
