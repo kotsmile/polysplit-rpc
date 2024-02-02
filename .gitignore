@@ -2,3 +2,4 @@ target/
 .env
 !.sqlx/
 tarpaulin-report.html
+node_modules/

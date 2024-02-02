@@ -1,6 +1,7 @@
-use std::{cmp::Ordering, collections::HashMap, sync::Arc, time::Duration};
+use std::{cmp::Ordering, collections::HashMap, future::Future, sync::Arc, time::Duration};
 
 use anyhow::Result;
+use futures::stream::{FuturesUnordered, StreamExt};
 use rocket::tokio::sync::RwLock;
 use tokio_cron_scheduler::{Job, JobScheduler};
 
@@ -11,6 +12,8 @@ use crate::{
         proxy::ProxyService,
     },
 };
+
+const BATCH_SIZE: usize = 20;
 
 pub async fn run_crons(
     evm_rpc_service: Arc<EvmRpcService>,
@@ -31,10 +34,10 @@ pub async fn run_crons(
                 Box::pin(async move {
                     log::info!("start rpc feed cron");
                     rpc_feed_cron(
-                        evm_rpc_service.clone(),
-                        proxy_service.clone(),
-                        supported_chain_ids.clone(),
-                        feed_max_timeout.clone(),
+                        evm_rpc_service,
+                        proxy_service,
+                        supported_chain_ids,
+                        feed_max_timeout,
                     )
                     .await;
                 })
@@ -48,7 +51,7 @@ pub async fn run_crons(
                 let proxy_service = proxy_service.clone();
                 Box::pin(async move {
                     log::info!("start proxy updater cron");
-                    proxy_updater_cron(proxy_service.clone()).await;
+                    proxy_updater_cron(proxy_service).await;
                 })
             })?)
             .await?;
@@ -91,20 +94,48 @@ pub async fn rpc_feed_cron(
         log::debug!("rpc length for {chain_id}: {}", rpcs.len());
 
         let mut rpc_to_metric: HashMap<String, RpcMetric> = HashMap::new();
-        for rpc in rpcs {
-            let metric = evm_rpc_service
-                .rpc_health_check(
-                    chain_id,
-                    rpc,
-                    proxy_service.read().await.get_proxy(),
-                    feed_max_timeout,
-                    // TODO(@kotsmile): remove hard code
-                    3,
-                )
-                .await;
 
-            log::debug!("rpc: {rpc} with metric: {metric:?}");
-            rpc_to_metric.insert(rpc.to_owned(), metric);
+        let batches = rpcs.chunks(BATCH_SIZE);
+
+        for batch in batches {
+            let proxy_service = proxy_service.read().await;
+            let proxy_config = proxy_service.get_proxy(); // Assuming this is cloneable or cheap to obtain
+            let mut futures = FuturesUnordered::new();
+            for rpc in batch {
+                let evm_rpc_service_clone = evm_rpc_service.clone(); // Ensure this is cloneable or use Arc
+                let rpc_clone = rpc.to_owned();
+
+                futures.push(async move {
+                    let metric = evm_rpc_service_clone
+                        .rpc_health_check(
+                            chain_id,
+                            rpc,
+                            proxy_config,
+                            feed_max_timeout,
+                            // TODO(@kotsmile): remove hard code
+                            3,
+                        )
+                        .await;
+                    (rpc_clone, metric)
+                });
+            }
+
+            while let Some((rpc, metric)) = futures.next().await {
+                rpc_to_metric.insert(rpc, metric);
+            }
+            // let metric = evm_rpc_service
+            //     .rpc_health_check(
+            //         chain_id,
+            //         rpc,
+            //         proxy_service.read().await.get_proxy(),
+            //         feed_max_timeout,
+            //         // TODO(@kotsmile): remove hard code
+            //         3,
+            //     )
+            //     .await;
+            //
+            // log::debug!("rpc: {rpc} with metric: {metric:?}");
+            // rpc_to_metric.insert(rpc.to_owned(), metric);
         }
 
         let mut rpcs = Vec::from_iter(rpc_to_metric.iter());
@@ -117,9 +148,9 @@ pub async fn rpc_feed_cron(
             };
 
             if a.response_time_ms > b.response_time_ms {
-                Ordering::Less
-            } else if a.response_time_ms < b.response_time_ms {
                 Ordering::Greater
+            } else if a.response_time_ms < b.response_time_ms {
+                Ordering::Less
             } else {
                 Ordering::Equal
             }

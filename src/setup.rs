@@ -14,12 +14,16 @@ pub fn setup_app(
     proxy_service: Arc<RwLock<ProxyService>>,
     config_repo: ConfigRepo,
 ) -> Rocket<Build> {
+    std::env::set_var("ROCKET_PORT", config_repo.port.to_string());
     rocket::build()
         .manage(evm_rpc_service)
         .manage(proxy_service)
         .manage(config_repo)
         // .manage(storage)
-        .mount("/", openapi_get_routes![status::get_health])
+        .mount(
+            "/",
+            openapi_get_routes![status::get_health, chain::get_metrics_v1],
+        )
         .mount("/", routes![chain::post_chain_v1])
         .mount(
             "/swagger-ui/",

@@ -16,11 +16,10 @@ RUN rm src/*.rs
 COPY ./src ./src
 
 # build for release
-RUN rm ./target/release/deps/project*
 RUN cargo build --release
 
 # our final base
-FROM rust:1.49
+FROM rust:1.75
 
 # copy the build artifact from the build stage
 COPY --from=build /project/target/release/project .

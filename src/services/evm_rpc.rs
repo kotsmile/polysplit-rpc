@@ -6,7 +6,8 @@ use std::time::{Duration, Instant};
 use anyhow::Result as AnyhowResult;
 use reqwest::Client;
 use rocket::tokio::sync::RwLock;
-use serde::Deserialize;
+use schemars::JsonSchema;
+use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 
 use crate::client::chainlist::ChainlistClient;
@@ -46,7 +47,7 @@ struct EvmRpcTestResponse {
     result: String,
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Serialize, JsonSchema)]
 pub struct Metric {
     pub response_time_ms: u128,
 }
@@ -63,11 +64,7 @@ pub struct EvmRpcService {
 }
 
 impl EvmRpcService {
-    pub fn new(
-        cache_repo: Arc<RwLock<CacheRepo>>,
-        chainlist_client: Box<ChainlistClient>,
-        supported_chain_ids: Vec<String>,
-    ) -> Self {
+    pub fn new(cache_repo: Arc<RwLock<CacheRepo>>, chainlist_client: Box<ChainlistClient>) -> Self {
         Self {
             cache_repo,
             chainlist_client,
@@ -185,7 +182,7 @@ impl EvmRpcService {
                 }
                 Err(err) => {
                     failed += 1;
-                    log::error!("failed to check rpc {rpc}: {err}");
+                    log::debug!("failed to check rpc {rpc}: {err}");
                     continue;
                 }
             }
