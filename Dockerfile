@@ -10,4 +10,5 @@ RUN cargo build --release
 FROM rust:1.70
 WORKDIR /app  # Use a leading slash to be explicit about the path being absolute
 COPY --from=builder /app/target/release/polysplit-rpc ./polysplit-rpc
+ENV ROCKET_ADDRESS=0.0.0.0
 CMD ["./polysplit-rpc"]
