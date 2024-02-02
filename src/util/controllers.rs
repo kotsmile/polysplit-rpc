@@ -74,5 +74,17 @@ impl From<rocket::serde::json::Error<'_>> for ResponseError {
     }
 }
 
+#[derive(Debug, Serialize, JsonSchema)]
+pub struct ResponseData<T> {
+    data: T,
+}
+
+impl<T> ResponseData<T> {
+    pub fn build(data: T) -> Json<Self> {
+        Json(Self { data })
+    }
+}
+
 pub type ResponseResult<T> = Result<Json<T>, ResponseError>;
+pub type ResponseResultData<T> = ResponseResult<ResponseData<T>>;
 pub type RequestResult<'a, T> = Result<Json<T>, rocket::serde::json::Error<'a>>;
