@@ -11,9 +11,6 @@ use crate::repo::config::ConfigRepo;
 use crate::services::evm_rpc::EvmRpcService;
 use crate::services::monitoring::MonitoringService;
 use crate::services::proxy::ProxyService;
-//
-// //
-// rocket::ignite().attach(cors.to_cors().unwrap())
 
 pub fn setup_app(
     evm_rpc_service: Arc<EvmRpcService>,
