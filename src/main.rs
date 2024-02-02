@@ -102,7 +102,7 @@ async fn main() -> Result<()> {
         // TODO(@kotsmile): move orders to envs
         vec![ProxysellerOrder(
             String::from("mix"),
-            String::from("1953510"),
+            String::from("1973991"),
         )],
         3000,
     ));
