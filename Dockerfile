@@ -3,7 +3,6 @@ RUN USER=root cargo new --bin project
 WORKDIR /project
 COPY ./Cargo.lock ./Cargo.lock
 COPY ./Cargo.toml ./Cargo.toml
-RUN cargo build --release
 RUN rm -rf src
 COPY ./src ./src
 RUN cargo build --release
