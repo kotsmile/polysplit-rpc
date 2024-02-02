@@ -9,7 +9,7 @@ use serde_json::Value;
 use crate::{
     repo::config::ConfigRepo,
     services::{
-        evm_rpc::{EvmRpcService, Metric},
+        evm_rpc::{EvmRpcService, RpcMetrics},
         monitoring::MonitoringService,
         proxy::ProxyService,
     },
@@ -82,7 +82,7 @@ pub async fn post_chain_v1(
 #[derive(Debug, Serialize, JsonSchema)]
 pub struct InnerMetricResponse {
     rpc: String,
-    metric: Metric,
+    metric: RpcMetrics,
 }
 
 #[derive(Debug, Serialize, JsonSchema)]

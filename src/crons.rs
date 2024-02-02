@@ -8,7 +8,7 @@ use tokio_cron_scheduler::{Job, JobScheduler};
 use crate::{
     repo::config::ConfigRepo,
     services::{
-        evm_rpc::{EvmRpcService, Metric, RpcMetric},
+        evm_rpc::{EvmRpcService, RpcMetrics},
         proxy::ProxyService,
     },
 };
@@ -93,7 +93,7 @@ pub async fn rpc_feed_cron(
 
         log::debug!("rpc length for {chain_id}: {}", rpcs.len());
 
-        let mut rpc_to_metric: HashMap<String, RpcMetric> = HashMap::new();
+        let mut rpc_to_metric: HashMap<String, Result<RpcMetrics>> = HashMap::new();
         for batch in rpcs.chunks(BATCH_SIZE) {
             let proxy_service = proxy_service.read().await;
             let proxy_config = proxy_service.get_proxy(); // Assuming this is cloneable or cheap to obtain
@@ -124,10 +124,10 @@ pub async fn rpc_feed_cron(
 
         let mut rpcs = Vec::from_iter(rpc_to_metric.iter());
         rpcs.sort_by(|&(_, a), &(_, b)| {
-            let RpcMetric::Ok(a) = a else {
+            let Ok(a) = a else {
                 return Ordering::Greater;
             };
-            let RpcMetric::Ok(b) = b else {
+            let Ok(b) = b else {
                 return Ordering::Less;
             };
 
@@ -140,10 +140,10 @@ pub async fn rpc_feed_cron(
             }
         });
 
-        let rpcs: Vec<(String, Metric)> = rpcs
+        let rpcs: Vec<(String, RpcMetrics)> = rpcs
             .iter()
             .filter_map(|&(rpc, metric)| {
-                let RpcMetric::Ok(metric) = metric else {
+                let Ok(metric) = metric else {
                     return None;
                 };
 

@@ -1,9 +1,9 @@
 use moka::sync::Cache;
 
-use crate::services::evm_rpc::Metric;
+use crate::services::evm_rpc::RpcMetrics;
 
 pub struct CacheRepo {
-    chain_id_to_rpcs_cache: Cache<String, Vec<(String, Metric)>>,
+    chain_id_to_rpcs_cache: Cache<String, Vec<(String, RpcMetrics)>>,
     income_requests: u128,
     success_income_requests: u128,
 }
@@ -17,11 +17,11 @@ impl CacheRepo {
         }
     }
 
-    pub fn get_rpcs_for_chain_id(&self, chain_id: &str) -> Option<Vec<(String, Metric)>> {
+    pub fn get_rpcs_for_chain_id(&self, chain_id: &str) -> Option<Vec<(String, RpcMetrics)>> {
         self.chain_id_to_rpcs_cache.get(chain_id)
     }
 
-    pub fn set_rpcs_for_chain_id(&mut self, chain_id: &str, rpcs: Vec<(String, Metric)>) {
+    pub fn set_rpcs_for_chain_id(&mut self, chain_id: &str, rpcs: Vec<(String, RpcMetrics)>) {
         self.chain_id_to_rpcs_cache
             .insert(chain_id.to_string(), rpcs);
     }

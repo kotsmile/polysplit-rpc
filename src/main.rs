@@ -21,7 +21,7 @@ use client::{
 };
 use repo::{cache::CacheRepo, config::ConfigRepo};
 use services::{
-    evm_rpc::{EvmRpcService, Metric},
+    evm_rpc::{EvmRpcService, RpcMetrics},
     monitoring::MonitoringService,
     proxy::ProxyService,
 };
@@ -73,11 +73,11 @@ async fn run_tasks(
             continue;
         };
 
-        let mut rpcs_for_chain_id: Vec<(String, Metric)> = Vec::new();
+        let mut rpcs_for_chain_id: Vec<(String, RpcMetrics)> = Vec::new();
         for rpc in rpcs {
             rpcs_for_chain_id.push((
                 rpc.clone(),
-                Metric {
+                RpcMetrics {
                     response_time_ms: 0,
                 },
             ));

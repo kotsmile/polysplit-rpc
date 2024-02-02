@@ -3,7 +3,7 @@ use std::fmt::{Debug, Display};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
-use anyhow::Result as AnyhowResult;
+use anyhow::{bail, Result as AnyhowResult};
 use reqwest::Client;
 use rocket::tokio::sync::RwLock;
 use schemars::JsonSchema;
@@ -48,14 +48,14 @@ struct EvmRpcTestResponse {
 }
 
 #[derive(Debug, Clone, Copy, Serialize, JsonSchema)]
-pub struct Metric {
+pub struct RpcMetrics {
     pub response_time_ms: u128,
 }
 
-#[derive(Debug)]
-pub enum RpcMetric {
-    Ok(Metric),
-    Error(String),
+impl RpcMetrics {
+    pub fn to_score(&self) -> f32 {
+        1.0 / self.response_time_ms as f32
+    }
 }
 
 pub struct EvmRpcService {
@@ -142,7 +142,7 @@ impl EvmRpcService {
         proxy_config: Option<&ProxyConfig>,
         timeout: Duration,
         request_tries: u32,
-    ) -> RpcMetric {
+    ) -> AnyhowResult<RpcMetrics> {
         let test_request = json!({
             "method": "eth_chainId",
             "params": [],
@@ -191,25 +191,25 @@ impl EvmRpcService {
         }
 
         if failed > 0 {
-            return RpcMetric::Error("Too many failed attempts".to_owned());
+            bail!("Too many failed attempts")
         }
 
         let response_time_ms = total_time / (request_tries - failed) as u128;
-        return RpcMetric::Ok(Metric { response_time_ms });
+        return Ok(RpcMetrics { response_time_ms });
     }
 
     pub async fn fetch_rpcs(&self) -> AnyhowResult<HashMap<String, Vec<String>>> {
         self.chainlist_client.fetch_rpcs().await
     }
 
-    pub async fn set_rpcs_for_chain_id(&self, chain_id: &str, rpcs: Vec<(String, Metric)>) {
+    pub async fn set_rpcs_for_chain_id(&self, chain_id: &str, rpcs: Vec<(String, RpcMetrics)>) {
         self.cache_repo
             .write()
             .await
             .set_rpcs_for_chain_id(chain_id, rpcs)
     }
 
-    pub async fn get_rpcs_for_chain_id(&self, chain_id: &str) -> Option<Vec<(String, Metric)>> {
+    pub async fn get_rpcs_for_chain_id(&self, chain_id: &str) -> Option<Vec<(String, RpcMetrics)>> {
         self.cache_repo.read().await.get_rpcs_for_chain_id(chain_id)
     }
 }
