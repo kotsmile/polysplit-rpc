@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
-use rocket::{routes, tokio::sync::RwLock, Build, Rocket};
+use rocket::{http::Method, routes, tokio::sync::RwLock, Build, Rocket};
+use rocket_cors::{AllowedOrigins, CorsOptions};
 use rocket_okapi::{openapi_get_routes, rapidoc::*, settings::UrlObject, swagger_ui::*};
 
 use crate::controllers::status;
@@ -10,6 +11,9 @@ use crate::repo::config::ConfigRepo;
 use crate::services::evm_rpc::EvmRpcService;
 use crate::services::monitoring::MonitoringService;
 use crate::services::proxy::ProxyService;
+//
+// //
+// rocket::ignite().attach(cors.to_cors().unwrap())
 
 pub fn setup_app(
     evm_rpc_service: Arc<EvmRpcService>,
@@ -17,7 +21,18 @@ pub fn setup_app(
     monitoring_service: Arc<MonitoringService>,
     config_repo: ConfigRepo,
 ) -> Rocket<Build> {
+    let cors = CorsOptions::default()
+        .allowed_origins(AllowedOrigins::all())
+        .allowed_methods(
+            vec![Method::Get, Method::Post, Method::Patch]
+                .into_iter()
+                .map(From::from)
+                .collect(),
+        )
+        .allow_credentials(true);
+
     std::env::set_var("ROCKET_PORT", config_repo.port.to_string());
+
     rocket::build()
         .manage(evm_rpc_service)
         .manage(proxy_service)
@@ -59,4 +74,5 @@ pub fn setup_app(
                 }),
             ),
         )
+        .attach(cors.to_cors().unwrap())
 }

@@ -7,6 +7,7 @@ use rocket::tokio::{sync::RwLock, task};
 
 mod client;
 mod controllers;
+mod cors;
 mod crons;
 mod models;
 mod repo;
