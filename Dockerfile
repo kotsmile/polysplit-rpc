@@ -1,13 +1,11 @@
 FROM rust:1.75 as build
-RUN USER=root cargo new --bin project
-WORKDIR /project
+WORKDIR /app
 COPY ./Cargo.lock ./Cargo.lock
 COPY ./Cargo.toml ./Cargo.toml
-RUN rm -rf src
 COPY ./src ./src
 RUN cargo build --release
+CMD ["./app/target/release/polysplit-rpc"]
 
 
-FROM rust:1.75
-COPY --from=build /project/target/release/polysplit-rpc .
-CMD ["./polysplit-rpc"]
+# FROM rust:1.75
+# COPY --from=build /project/target/release/polysplit-rpc .

@@ -21,6 +21,7 @@ use client::{
 use repo::{cache::CacheRepo, config::ConfigRepo};
 use services::{
     evm_rpc::{EvmRpcService, Metric},
+    monitoring::MonitoringService,
     proxy::ProxyService,
 };
 use setup::setup_app;
@@ -112,6 +113,7 @@ async fn main() -> Result<()> {
         cache_repo.clone(),
         chainlist_client.clone(),
     ));
+    let monitoring_service = Arc::new(MonitoringService::new(cache_repo.clone()));
 
     run_tasks(
         evm_rpc_service.clone(),
@@ -130,6 +132,7 @@ async fn main() -> Result<()> {
     setup_app(
         evm_rpc_service.clone(),
         proxy_service.clone(),
+        monitoring_service.clone(),
         config_repo.clone(),
     )
     .launch()

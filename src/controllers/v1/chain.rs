@@ -10,6 +10,7 @@ use crate::{
     repo::config::ConfigRepo,
     services::{
         evm_rpc::{EvmRpcService, Metric},
+        monitoring::MonitoringService,
         proxy::ProxyService,
     },
     util::controllers::{ResponseError, ResponseResult},
@@ -21,8 +22,11 @@ pub async fn post_chain_v1(
     rpc_call: Json<Value>,
     evm_rpc_service: &State<Arc<EvmRpcService>>,
     proxy_service: &State<Arc<RwLock<ProxyService>>>,
+    monitoring_service: &State<Arc<MonitoringService>>,
     config_repo: &State<ConfigRepo>,
 ) -> ResponseResult<Value> {
+    monitoring_service.increment_income_requests().await;
+
     if let None = config_repo
         .supported_chain_ids
         .iter()
@@ -61,6 +65,7 @@ pub async fn post_chain_v1(
             match response {
                 Ok(val) => {
                     log::info!("picked rpc: {}", rpc.0);
+                    monitoring_service.increment_success_income_requests().await;
                     return Ok(Json(val));
                 }
                 _ => {}

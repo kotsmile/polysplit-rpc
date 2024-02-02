@@ -5,13 +5,16 @@ use rocket_okapi::{openapi_get_routes, rapidoc::*, settings::UrlObject, swagger_
 
 use crate::controllers::status;
 use crate::controllers::v1::chain;
+use crate::controllers::v1::monitoring;
 use crate::repo::config::ConfigRepo;
 use crate::services::evm_rpc::EvmRpcService;
+use crate::services::monitoring::MonitoringService;
 use crate::services::proxy::ProxyService;
 
 pub fn setup_app(
     evm_rpc_service: Arc<EvmRpcService>,
     proxy_service: Arc<RwLock<ProxyService>>,
+    monitoring_service: Arc<MonitoringService>,
     config_repo: ConfigRepo,
 ) -> Rocket<Build> {
     std::env::set_var("ROCKET_PORT", config_repo.port.to_string());
@@ -19,10 +22,15 @@ pub fn setup_app(
         .manage(evm_rpc_service)
         .manage(proxy_service)
         .manage(config_repo)
+        .manage(monitoring_service)
         // .manage(storage)
         .mount(
             "/",
-            openapi_get_routes![status::get_health, chain::get_metrics_v1],
+            openapi_get_routes![
+                status::get_health,
+                chain::get_metrics_v1,
+                monitoring::get_monitoring_v1
+            ],
         )
         .mount("/", routes![chain::post_chain_v1])
         .mount(
