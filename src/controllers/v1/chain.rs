@@ -82,7 +82,7 @@ pub async fn post_chain_v1(
 #[derive(Debug, Serialize, JsonSchema)]
 pub struct InnerMetricResponse {
     rpc: String,
-    metric: RpcMetrics,
+    metrics: RpcMetrics,
 }
 
 #[derive(Debug, Serialize, JsonSchema)]
@@ -122,7 +122,7 @@ pub async fn get_metrics_v1(
             .iter()
             .map(|val| InnerMetricResponse {
                 rpc: val.0.clone(),
-                metric: val.1.clone(),
+                metrics: val.1.clone(),
             })
             .collect(),
     }))
