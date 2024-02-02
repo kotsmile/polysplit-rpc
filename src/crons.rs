@@ -1,4 +1,4 @@
-use std::{cmp::Ordering, collections::HashMap, future::Future, sync::Arc, time::Duration};
+use std::{cmp::Ordering, collections::HashMap, sync::Arc, time::Duration};
 
 use anyhow::Result;
 use futures::stream::{FuturesUnordered, StreamExt};
@@ -94,10 +94,7 @@ pub async fn rpc_feed_cron(
         log::debug!("rpc length for {chain_id}: {}", rpcs.len());
 
         let mut rpc_to_metric: HashMap<String, RpcMetric> = HashMap::new();
-
-        let batches = rpcs.chunks(BATCH_SIZE);
-
-        for batch in batches {
+        for batch in rpcs.chunks(BATCH_SIZE) {
             let proxy_service = proxy_service.read().await;
             let proxy_config = proxy_service.get_proxy(); // Assuming this is cloneable or cheap to obtain
             let mut futures = FuturesUnordered::new();
@@ -123,19 +120,6 @@ pub async fn rpc_feed_cron(
             while let Some((rpc, metric)) = futures.next().await {
                 rpc_to_metric.insert(rpc, metric);
             }
-            // let metric = evm_rpc_service
-            //     .rpc_health_check(
-            //         chain_id,
-            //         rpc,
-            //         proxy_service.read().await.get_proxy(),
-            //         feed_max_timeout,
-            //         // TODO(@kotsmile): remove hard code
-            //         3,
-            //     )
-            //     .await;
-            //
-            // log::debug!("rpc: {rpc} with metric: {metric:?}");
-            // rpc_to_metric.insert(rpc.to_owned(), metric);
         }
 
         let mut rpcs = Vec::from_iter(rpc_to_metric.iter());

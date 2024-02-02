@@ -90,7 +90,7 @@ async fn run_tasks(
 
 #[rocket::main]
 async fn main() -> Result<()> {
-    dotenvy::dotenv()?;
+    let _ = dotenvy::dotenv();
     env_logger::init();
 
     let cache_repo = Arc::new(RwLock::new(CacheRepo::new()));
