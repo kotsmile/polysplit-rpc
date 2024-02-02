@@ -130,14 +130,7 @@ pub async fn rpc_feed_cron(
             let Ok(b) = b else {
                 return Ordering::Less;
             };
-
-            if a.response_time_ms > b.response_time_ms {
-                Ordering::Greater
-            } else if a.response_time_ms < b.response_time_ms {
-                Ordering::Less
-            } else {
-                Ordering::Equal
-            }
+            b.to_score().total_cmp(&a.to_score())
         });
 
         let rpcs: Vec<(String, RpcMetrics)> = rpcs
