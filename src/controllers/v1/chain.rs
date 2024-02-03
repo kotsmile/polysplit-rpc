@@ -25,7 +25,7 @@ pub async fn post_chain_v1(
     monitoring_service: &State<Arc<MonitoringService>>,
     config_repo: &State<ConfigRepo>,
 ) -> ResponseResult<Value> {
-    monitoring_service.inc_success_income_requests().await;
+    monitoring_service.inc_income_requests().await;
 
     if let None = config_repo
         .supported_chain_ids
