@@ -1,9 +1,9 @@
 use lazy_static::lazy_static;
-// Global storage for request counts
-#[macro_use]
 use rocket::fairing::{Fairing, Info, Kind};
 use rocket::http::Status;
-use rocket::{Data, Request, Response, Rocket};
+use rocket::outcome::Outcome::*;
+use rocket::request::{self, FromRequest};
+use rocket::{Data, Request};
 use std::collections::HashMap;
 use std::sync::Mutex;
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -12,14 +12,14 @@ lazy_static! {
     static ref REQUEST_COUNTS: Mutex<HashMap<String, (u64, u64)>> = Mutex::new(HashMap::new());
 }
 
-pub struct RequestLimiter;
+pub struct RateLimiter;
 
 #[rocket::async_trait]
-impl Fairing for RequestLimiter {
+impl Fairing for RateLimiter {
     fn info(&self) -> Info {
         Info {
-            name: "Request Limiter",
-            kind: Kind::Request | Kind::Response,
+            name: "Rate Limiter",
+            kind: Kind::Request,
         }
     }
 
@@ -36,25 +36,27 @@ impl Fairing for RequestLimiter {
 
         let count_info = counts.entry(ip).or_insert((0, current_time));
         if current_time - count_info.1 > 60 {
-            // Reset every minute
-            *count_info = (0, current_time);
-        }
-        count_info.0 += 1;
-    }
-
-    async fn on_response<'r>(&self, request: &'r Request<'_>, response: &mut Response<'r>) {
-        let ip = request
-            .client_ip()
-            .map(|ip| ip.to_string())
-            .unwrap_or_default();
-        let counts = REQUEST_COUNTS.lock().unwrap();
-        let count_info = counts.get(&ip);
-
-        if let Some((count, _)) = count_info {
-            if *count > 100 {
-                // Limit to 100 requests per minute
-                response.set_status(Status::TooManyRequests);
+            *count_info = (1, current_time);
+        } else {
+            count_info.0 += 1;
+            if count_info.0 > 25 {
+                request.local_cache(|| RateLimitExceeded(true));
             }
+        }
+    }
+}
+
+#[derive(Default)]
+pub struct RateLimitExceeded(bool);
+
+#[rocket::async_trait]
+impl<'r> FromRequest<'r> for RateLimitExceeded {
+    type Error = ();
+
+    async fn from_request(request: &'r Request<'_>) -> request::Outcome<Self, Self::Error> {
+        match request.local_cache(|| RateLimitExceeded(false)).0 {
+            true => Error((Status::TooManyRequests, ())),
+            false => Success(RateLimitExceeded(false)),
         }
     }
 }

@@ -7,6 +7,7 @@ use serde::Serialize;
 use serde_json::Value;
 
 use crate::{
+    middleware::RateLimitExceeded,
     repo::config::ConfigRepo,
     services::{
         evm_rpc::{EvmRpcService, RpcMetrics},
@@ -24,6 +25,7 @@ pub async fn post_chain_v1(
     proxy_service: &State<Arc<RwLock<ProxyService>>>,
     monitoring_service: &State<Arc<MonitoringService>>,
     config_repo: &State<ConfigRepo>,
+    _rate_limit: RateLimitExceeded,
 ) -> ResponseResult<Value> {
     monitoring_service.inc_income_requests().await;
 

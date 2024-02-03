@@ -1,13 +1,15 @@
 use std::sync::Arc;
 
+use rocket::catchers;
 use rocket::{http::Method, routes, tokio::sync::RwLock, Build, Rocket};
 use rocket_cors::{AllowedOrigins, CorsOptions};
 use rocket_okapi::{openapi_get_routes, rapidoc::*, settings::UrlObject, swagger_ui::*};
 
+use crate::controllers::catchers;
 use crate::controllers::status;
 use crate::controllers::v1::chain;
 use crate::controllers::v1::monitoring;
-use crate::middleware::RequestLimiter;
+use crate::middleware::RateLimiter;
 use crate::repo::config::ConfigRepo;
 use crate::services::evm_rpc::EvmRpcService;
 use crate::services::monitoring::MonitoringService;
@@ -32,7 +34,7 @@ pub fn setup_app(
     std::env::set_var("ROCKET_PORT", config_repo.port.to_string());
 
     rocket::build()
-        .attach(RequestLimiter)
+        .attach(RateLimiter)
         .manage(evm_rpc_service)
         .manage(proxy_service)
         .manage(config_repo)
@@ -47,6 +49,7 @@ pub fn setup_app(
             ],
         )
         .mount("/", routes![chain::post_chain_v1])
+        .register("/", catchers![catchers::rate_limit_exceeded])
         .mount(
             "/swagger-ui/",
             make_swagger_ui(

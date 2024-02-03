@@ -16,17 +16,19 @@ async function main() {
     );
     for (let i = 0; i < 100; i++) {
       console.log(i);
-      const blockNumber = await provider.getBlockNumber();
-      console.log({ blockNumber });
-      Bun.sleepSync(100);
+      try {
+
+    const a = await  provider.getBlockNumber() // .catch(console.error)
+    console.log(a)
+      } catch (err) {
+        console.error(err)
+      }
     }
   }
 }
 
 async function f() {
-  for (let i = 0; i < 10; i++) {
     main();
-  }
 }
 
 await f();
