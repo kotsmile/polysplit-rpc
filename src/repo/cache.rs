@@ -28,7 +28,7 @@ impl CacheRepo {
         self.monitoring
     }
 
-    pub fn update_monitoring(&mut self, update_fn: fn(&mut Monitoring) -> ()) {
-        update_fn(&mut self.monitoring);
+    pub fn get_monitoring_mut(&mut self) -> &mut Monitoring {
+        &mut self.monitoring
     }
 }

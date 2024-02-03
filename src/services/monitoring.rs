@@ -18,20 +18,17 @@ impl MonitoringService {
     }
 
     pub async fn inc_income_requests(&self) {
-        self.cache_repo.write().await.update_monitoring(|m| {
-            m.income_requests += 1;
-        });
+        let mut cache = self.cache_repo.write().await;
+        cache.get_monitoring_mut().income_requests += 1;
     }
 
     pub async fn inc_success_income_requests(&self) {
-        self.cache_repo.write().await.update_monitoring(|m| {
-            m.success_income_requests += 1;
-        });
+        let mut cache = self.cache_repo.write().await;
+        cache.get_monitoring_mut().success_income_requests += 1;
     }
 
     pub async fn inc_error_income_requests(&self) {
-        self.cache_repo.write().await.update_monitoring(|m| {
-            m.error_income_requests += 1;
-        });
+        let mut cache = self.cache_repo.write().await;
+        cache.get_monitoring_mut().error_income_requests += 1;
     }
 }
