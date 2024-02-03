@@ -1394,6 +1394,7 @@ dependencies = [
  "env_logger",
  "futures",
  "jsonwebtoken",
+ "lazy_static",
  "log",
  "mockall",
  "moka",

@@ -9,6 +9,7 @@ mod client;
 mod controllers;
 mod cors;
 mod crons;
+mod middleware;
 mod models;
 mod repo;
 mod services;

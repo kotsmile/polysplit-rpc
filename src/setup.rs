@@ -7,6 +7,7 @@ use rocket_okapi::{openapi_get_routes, rapidoc::*, settings::UrlObject, swagger_
 use crate::controllers::status;
 use crate::controllers::v1::chain;
 use crate::controllers::v1::monitoring;
+use crate::middleware::RequestLimiter;
 use crate::repo::config::ConfigRepo;
 use crate::services::evm_rpc::EvmRpcService;
 use crate::services::monitoring::MonitoringService;
@@ -31,6 +32,7 @@ pub fn setup_app(
     std::env::set_var("ROCKET_PORT", config_repo.port.to_string());
 
     rocket::build()
+        .attach(RequestLimiter)
         .manage(evm_rpc_service)
         .manage(proxy_service)
         .manage(config_repo)
