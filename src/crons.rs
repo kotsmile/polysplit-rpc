@@ -96,10 +96,10 @@ pub async fn rpc_feed_cron(
         let mut rpc_to_metric: HashMap<String, Result<RpcMetrics>> = HashMap::new();
         for batch in rpcs.chunks(BATCH_SIZE) {
             let proxy_service = proxy_service.read().await;
-            let proxy_config = proxy_service.get_proxy(); // Assuming this is cloneable or cheap to obtain
+            let proxy_config = proxy_service.get_proxy();  
             let mut futures = FuturesUnordered::new();
             for rpc in batch {
-                let evm_rpc_service_clone = evm_rpc_service.clone(); // Ensure this is cloneable or use Arc
+                let evm_rpc_service_clone = evm_rpc_service.clone(); 
                 let rpc_clone = rpc.to_owned();
 
                 futures.push(async move {

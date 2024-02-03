@@ -87,7 +87,7 @@ pub struct InnerMetricResponse {
 
 #[derive(Debug, Serialize, JsonSchema)]
 pub struct MetricsResponse {
-    rpcs: Vec<InnerMetricResponse>, // pub id: Uuid,
+    rpcs: Vec<InnerMetricResponse>,
 }
 
 #[openapi(tag = "Metrics")]
