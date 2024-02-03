@@ -39,7 +39,7 @@ impl Fairing for RateLimiter {
             *count_info = (1, current_time);
         } else {
             count_info.0 += 1;
-            if count_info.0 > 25 {
+            if count_info.0 > 200 {
                 request.local_cache(|| RateLimitExceeded(true));
             }
         }
