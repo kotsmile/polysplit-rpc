@@ -25,7 +25,7 @@ pub async fn run_crons(
     {
         let proxy_service = proxy_service.clone();
         sched
-            .add(Job::new_async("0 */1 * * * *", move |_uuid, mut _l| {
+            .add(Job::new_async("0 */5 * * * *", move |_uuid, mut _l| {
                 let evm_rpc_service = evm_rpc_service.clone();
                 let proxy_service = proxy_service.clone();
                 let supported_chain_ids = config_repo.supported_chain_ids.clone();
@@ -96,10 +96,10 @@ pub async fn rpc_feed_cron(
         let mut rpc_to_metric: HashMap<String, Result<RpcMetrics>> = HashMap::new();
         for batch in rpcs.chunks(BATCH_SIZE) {
             let proxy_service = proxy_service.read().await;
-            let proxy_config = proxy_service.get_proxy();  
+            let proxy_config = proxy_service.get_proxy();
             let mut futures = FuturesUnordered::new();
             for rpc in batch {
-                let evm_rpc_service_clone = evm_rpc_service.clone(); 
+                let evm_rpc_service_clone = evm_rpc_service.clone();
                 let rpc_clone = rpc.to_owned();
 
                 futures.push(async move {
