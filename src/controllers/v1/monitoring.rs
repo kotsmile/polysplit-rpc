@@ -28,8 +28,7 @@ pub async fn get_monitoring_v1(
         total: monitoring.income_requests,
         success: monitoring.success_income_requests,
         errors: monitoring.error_income_requests,
-        success_rate: (monitoring.success_income_requests as f32
-            / monitoring.income_requests as f32)
-            * 100 as f32,
+        success_rate: 100.0
+            - (monitoring.error_income_requests as f32 / monitoring.income_requests as f32) * 100.0,
     }))
 }
