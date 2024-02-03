@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, Context, Result};
 use regex_macro::regex;
 
 const RESOURCE_URL: &'static str =
@@ -19,10 +19,10 @@ impl ChainlistClient {
     pub async fn fetch_rpcs(&self) -> Result<HashMap<String, Vec<String>>> {
         let content = reqwest::get(RESOURCE_URL)
             .await
-            .map_err(|err| anyhow!("failed to make resposne to github: {err}"))?
+            .context("failed to make resposne to github")?
             .text()
             .await
-            .map_err(|err| anyhow!("failed to parse response: {err}"))?;
+            .context("failed to parse response")?;
 
         let lines: Vec<&str> = content.split('\n').collect();
 

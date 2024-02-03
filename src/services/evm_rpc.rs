@@ -1,44 +1,50 @@
 use std::collections::HashMap;
-use std::fmt::{Debug, Display};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
-use anyhow::{bail, Result as AnyhowResult};
+use anyhow::bail;
 use reqwest::Client;
 use rocket::tokio::sync::RwLock;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
+use thiserror::Error;
 
 use crate::client::chainlist::ChainlistClient;
 use crate::models::proxy::ProxyConfig;
 use crate::repo::cache::CacheRepo;
 
+#[derive(Debug, Error)]
 pub enum EvmRpcError {
+    #[error("server error")]
     Server,
+    #[error("client error")]
     Client,
+    #[error("internal error: {0}")]
     Internal(String),
+    #[error("proxy error: {0}")]
     Proxy(String),
+    #[error("rpc timeout")]
     Timeout,
 }
 
-impl Display for EvmRpcError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match &self {
-            EvmRpcError::Server => write!(f, "Server error"),
-            EvmRpcError::Client => write!(f, "Client error"),
-            EvmRpcError::Proxy(msg) => write!(f, "Proxy error: {msg}"),
-            EvmRpcError::Internal(msg) => write!(f, "Internal error: {msg}"),
-            EvmRpcError::Timeout => write!(f, "Timeout"),
-        }
-    }
-}
-
-impl Debug for EvmRpcError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        Display::fmt(&self, f)
-    }
-}
+// impl Display for EvmRpcError {
+//     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+//         match &self {
+//             EvmRpcError::Server => write!(f, "Server error"),
+//             EvmRpcError::Client => write!(f, "Client error"),
+//             EvmRpcError::Proxy(msg) => write!(f, "Proxy error: {msg}"),
+//             EvmRpcError::Internal(msg) => write!(f, "Internal error: {msg}"),
+//             EvmRpcError::Timeout => write!(f, "Timeout"),
+//         }
+//     }
+// }
+//
+// impl Debug for EvmRpcError {
+//     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+//         Display::fmt(&self, f)
+//     }
+// }
 
 #[derive(Deserialize)]
 struct EvmRpcTestResponse {
@@ -142,7 +148,7 @@ impl EvmRpcService {
         proxy_config: Option<&ProxyConfig>,
         timeout: Duration,
         request_tries: u32,
-    ) -> AnyhowResult<RpcMetrics> {
+    ) -> anyhow::Result<RpcMetrics> {
         let test_request = json!({
             "method": "eth_chainId",
             "params": [],
@@ -198,7 +204,7 @@ impl EvmRpcService {
         return Ok(RpcMetrics { response_time_ms });
     }
 
-    pub async fn fetch_rpcs(&self) -> AnyhowResult<HashMap<String, Vec<String>>> {
+    pub async fn fetch_rpcs(&self) -> anyhow::Result<HashMap<String, Vec<String>>> {
         self.chainlist_client.fetch_rpcs().await
     }
 

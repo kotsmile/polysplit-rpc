@@ -1,4 +1,4 @@
-use anyhow::{anyhow, Result};
+use anyhow::{Context, Result};
 use reqwest::Proxy;
 
 #[derive(Debug, Clone)]
@@ -12,7 +12,7 @@ pub struct ProxyConfig {
 impl ProxyConfig {
     pub fn to_proxy(&self) -> Result<Proxy> {
         Ok(Proxy::http(format!("http://{}:{}", self.host, self.port))
-            .map_err(|err| anyhow!("failed to build proxy: {err}"))?
+            .context("failed to build proxy")?
             .basic_auth(&self.username, &self.password))
     }
 }

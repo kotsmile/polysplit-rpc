@@ -35,3 +35,4 @@ tokio-cron-scheduler = "0.10.0"
 futures = "0.3.30"
 rocket_cors = "0.6.0"
 rocket-governor = { version = "0.2.0-rc.1", features = ["logger"] }
+thiserror = "1.0.56"

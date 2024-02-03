@@ -1,4 +1,4 @@
-use anyhow::{anyhow, bail, Result};
+use anyhow::{anyhow, bail, Context, Result};
 
 use crate::{client::proxyseller::ProxysellerClient, models::proxy::ProxyConfig};
 
@@ -33,7 +33,7 @@ impl ProxyService {
     pub async fn rotate_proxy(&mut self) -> Result<()> {
         let length = self.proxies.len();
         if length == 0 {
-            bail!("proxies length is zero")
+            bail!("proxies length is zero");
         }
 
         let inital_proxy_id = self.proxy_id;
@@ -55,7 +55,7 @@ impl ProxyService {
                 .proxy_client
                 .check_proxy(&proxy_config)
                 .await
-                .map_err(|err| anyhow!("failed to check proxy: {err}"))?;
+                .context("failed to check proxy")?;
 
             if response {
                 break;
@@ -70,7 +70,7 @@ impl ProxyService {
             .proxy_client
             .fetch_proxies()
             .await
-            .map_err(|err| anyhow!("failed to fetch proxies: {err}"))?;
+            .context("failed to fetch proxies")?;
 
         self.proxy_id = 0;
         self.state = ProxyServiceState::Initiated;

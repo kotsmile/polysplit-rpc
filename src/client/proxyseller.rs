@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use anyhow::{anyhow, bail, Result};
+use anyhow::{anyhow, bail, Context, Result};
 use serde::Deserialize;
 
 use crate::models::proxy::ProxyConfig;
@@ -82,10 +82,10 @@ impl ProxysellerClient {
                 .query(&params)
                 .send()
                 .await
-                .map_err(|err| anyhow!("failed to request proxy list: {err}"))?
+                .context("failed to request proxy list")?
                 .json::<ProxysellerResponse<ProxysellerFetchProxiesDataWrapper>>()
                 .await
-                .map_err(|err| anyhow!("failed to deserialize fetch request: {err}"))?;
+                .context("failed to deserialize fetch request")?;
 
             match response.data.items {
                 ProxysellerFetchProxiesData::Array(arr) => {
@@ -131,13 +131,13 @@ impl ProxysellerClient {
             .query(&params)
             .send()
             .await
-            .map_err(|err| anyhow!("failed to request check for proxy: {err}"))?
+            .context("failed to request check for proxy")?
             .json::<ProxysellerResponse<ProxysellerCheckProxyData>>()
             .await
-            .map_err(|err| anyhow!("failed to deserialize check request: {err}"))?;
+            .context("failed to deserialize check request")?;
 
         if response.status != "success".to_string() {
-            bail!("check response status not equal success")
+            bail!("check response status not equal success");
         }
 
         Ok(response.data.valid && response.data.time < self.timeout_ms)

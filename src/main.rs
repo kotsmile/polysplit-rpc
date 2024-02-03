@@ -1,13 +1,12 @@
 #![warn(missing_debug_implementations, rust_2018_idioms)]
 use std::sync::Arc;
 
-use anyhow::{anyhow, Result};
+use anyhow::{Context, Result};
 use crons::rpc_feed_cron;
 use rocket::tokio::{sync::RwLock, task};
 
 mod client;
 mod controllers;
-mod cors;
 mod crons;
 mod middleware;
 mod models;
@@ -96,8 +95,7 @@ async fn main() -> Result<()> {
     env_logger::init();
 
     let cache_repo = Arc::new(RwLock::new(CacheRepo::new()));
-    let config_repo =
-        ConfigRepo::new().map_err(|err| anyhow!("failed to inititate config repo: {err}"))?;
+    let config_repo = ConfigRepo::new().context("failed to inititate config repo")?;
 
     let proxyseller_client = Box::new(ProxysellerClient::new(
         config_repo.proxyseller_api_key.clone(),
@@ -140,5 +138,5 @@ async fn main() -> Result<()> {
     .launch()
     .await
     .map(|_| {})
-    .map_err(|err| anyhow!("failed to start application: {err}"))
+    .context("failed to start application")
 }
