@@ -23,12 +23,13 @@ pub struct MonitoringResponse {
 pub async fn get_monitoring_v1(
     monitoring_service: &State<Arc<MonitoringService>>,
 ) -> ResponseResultData<MonitoringResponse> {
-    let total = monitoring_service.get_income_requets().await;
-    let success = monitoring_service.get_succes_income_requets().await;
+    let monitoring = monitoring_service.get_monitoring().await;
     Ok(ResponseData::build(MonitoringResponse {
-        total,
-        success,
-        errors: total - success,
-        success_rate: (success as f32 / total as f32) * 100 as f32,
+        total: monitoring.income_requests,
+        success: monitoring.success_income_requests,
+        errors: monitoring.error_income_requests,
+        success_rate: (monitoring.success_income_requests as f32
+            / monitoring.income_requests as f32)
+            * 100 as f32,
     }))
 }

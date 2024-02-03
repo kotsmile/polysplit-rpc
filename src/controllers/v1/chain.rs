@@ -25,7 +25,7 @@ pub async fn post_chain_v1(
     monitoring_service: &State<Arc<MonitoringService>>,
     config_repo: &State<ConfigRepo>,
 ) -> ResponseResult<Value> {
-    monitoring_service.increment_income_requests().await;
+    monitoring_service.inc_success_income_requests().await;
 
     if let None = config_repo
         .supported_chain_ids
@@ -33,6 +33,7 @@ pub async fn post_chain_v1(
         .position(|val| val == chain_id)
     {
         log::error!("chainId {chain_id} is not supported");
+        monitoring_service.inc_error_income_requests().await;
         return Err(ResponseError {
             status: Status::BadRequest,
             error: format!("chainId {chain_id} is not supported yet"),
@@ -41,6 +42,7 @@ pub async fn post_chain_v1(
 
     let Some(rpcs) = evm_rpc_service.get_rpcs_for_chain_id(chain_id).await else {
         log::error!("failed to get rpcs for chainId {chain_id}");
+        monitoring_service.inc_error_income_requests().await;
         return Err(ResponseError {
             status: Status::InternalServerError,
             error: format!("No rpc provided for chainId {chain_id}"),
@@ -65,7 +67,7 @@ pub async fn post_chain_v1(
             match response {
                 Ok(val) => {
                     log::info!("picked rpc: {}", rpc.0);
-                    monitoring_service.increment_success_income_requests().await;
+                    monitoring_service.inc_success_income_requests().await;
                     return Ok(Json(val));
                 }
                 _ => {}
@@ -73,6 +75,7 @@ pub async fn post_chain_v1(
         }
     }
 
+    monitoring_service.inc_error_income_requests().await;
     Err(ResponseError {
         status: Status::InternalServerError,
         error: format!("failed to request all RPCs for chainId: {chain_id}"),

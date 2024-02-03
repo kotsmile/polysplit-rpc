@@ -1,19 +1,17 @@
 use moka::sync::Cache;
 
-use crate::services::evm_rpc::RpcMetrics;
+use crate::{models::monitoring::Monitoring, services::evm_rpc::RpcMetrics};
 
 pub struct CacheRepo {
     chain_id_to_rpcs_cache: Cache<String, Vec<(String, RpcMetrics)>>,
-    income_requests: u128,
-    success_income_requests: u128,
+    monitoring: Monitoring,
 }
 
 impl CacheRepo {
     pub fn new() -> Self {
         Self {
             chain_id_to_rpcs_cache: Cache::builder().max_capacity(1024).build(),
-            income_requests: 0,
-            success_income_requests: 0,
+            monitoring: Monitoring::new(),
         }
     }
 
@@ -26,17 +24,11 @@ impl CacheRepo {
             .insert(chain_id.to_string(), rpcs);
     }
 
-    pub fn get_income_requests(&self) -> u128 {
-        self.income_requests
-    }
-    pub fn increment_income_requests(&mut self) {
-        self.income_requests += 1;
+    pub fn get_monitoring(&self) -> Monitoring {
+        self.monitoring
     }
 
-    pub fn get_success_income_requests(&self) -> u128 {
-        self.success_income_requests
-    }
-    pub fn increment_success_income_requests(&mut self) {
-        self.success_income_requests += 1;
+    pub fn update_monitoring(&mut self, update_fn: fn(&mut Monitoring) -> ()) {
+        update_fn(&mut self.monitoring);
     }
 }
