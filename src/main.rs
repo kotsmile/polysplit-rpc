@@ -8,7 +8,6 @@ use rocket::tokio::{sync::RwLock, task};
 mod client;
 mod controllers;
 mod crons;
-mod guards;
 mod middleware;
 mod models;
 mod repo;
@@ -116,10 +115,7 @@ async fn main() -> Result<()> {
         chainlist_client.clone(),
     ));
     let monitoring_service = Arc::new(MonitoringService::new(cache_repo.clone()));
-    let jwt_service = Arc::new(JwtService::new(
-        config_repo.jwt_secret_key.clone(),
-        config_repo.jwt_access_expiration.clone(),
-    ));
+    let jwt_service = Arc::new(JwtService::new());
 
     run_tasks(
         evm_rpc_service.clone(),

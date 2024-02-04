@@ -8,8 +8,6 @@ pub struct ConfigRepo {
     pub proxyseller_api_key: String,
     pub supported_chain_ids: Vec<String>,
     pub feed_max_timeout: Duration,
-    pub jwt_secret_key: String,
-    pub jwt_access_expiration: u64,
     pub frontend_url: String,
     pub rocket_oauth: String,
 }
@@ -63,8 +61,6 @@ impl ConfigRepo {
             supported_chain_ids,
             frontend_url,
             feed_max_timeout,
-            jwt_secret_key,
-            jwt_access_expiration,
             rocket_oauth,
         })
     }

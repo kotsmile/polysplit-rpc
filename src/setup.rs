@@ -10,6 +10,7 @@ use crate::controllers::oauth2;
 use crate::controllers::status;
 use crate::controllers::v1::chain;
 use crate::controllers::v1::monitoring;
+use crate::controllers::v2::user;
 use crate::models::auth::GoogleUserInfo;
 use crate::repo::config::ConfigRepo;
 use crate::services::evm_rpc::EvmRpcService;
@@ -36,7 +37,6 @@ pub fn setup_app(
 
     std::env::set_var("ROCKET_PORT", config_repo.port.to_string());
     std::env::set_var("ROCKET_OAUTH", config_repo.rocket_oauth.to_string());
-    println!("{}", std::env::var("ROCKET_OAUTH").unwrap());
 
     rocket::build()
         .manage(config_repo)
@@ -51,7 +51,8 @@ pub fn setup_app(
             openapi_get_routes![
                 status::get_health,
                 chain::get_metrics_v1,
-                monitoring::get_monitoring_v1
+                monitoring::get_monitoring_v1,
+                user::get_user_me,
             ],
         )
         .mount(
