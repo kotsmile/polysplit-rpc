@@ -38,6 +38,7 @@ pub fn setup_app(
         .manage(config_repo)
         .manage(monitoring_service)
         // .manage(storage)
+        .register("/", catchers!(rocket_governor_catcher))
         .mount(
             "/",
             openapi_get_routes![
@@ -47,7 +48,6 @@ pub fn setup_app(
             ],
         )
         .mount("/", routes![chain::post_chain_v1])
-        .register("/", catchers!(rocket_governor_catcher))
         .mount(
             "/swagger-ui/",
             make_swagger_ui(

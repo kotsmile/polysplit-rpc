@@ -97,7 +97,7 @@ pub struct MetricsResponse {
 }
 
 #[openapi(tag = "Metrics")]
-#[get("/v1/chain/<chain_id>/matrics")]
+#[get("/v1/chain/<chain_id>/metrics")]
 pub async fn get_metrics_v1(
     chain_id: &str,
     evm_rpc_service: &State<Arc<EvmRpcService>>,
