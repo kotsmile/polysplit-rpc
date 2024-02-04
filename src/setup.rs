@@ -1,7 +1,6 @@
 use std::sync::Arc;
 
-use rocket::catchers;
-use rocket::{http::Method, routes, tokio::sync::RwLock, Build, Rocket};
+use rocket::{catchers, http::Method, routes, tokio::sync::RwLock, Build, Rocket};
 use rocket_cors::{AllowedOrigins, CorsOptions};
 use rocket_governor::rocket_governor_catcher;
 use rocket_oauth2::OAuth2;
@@ -11,17 +10,19 @@ use crate::controllers::oauth2;
 use crate::controllers::status;
 use crate::controllers::v1::chain;
 use crate::controllers::v1::monitoring;
+use crate::models::auth::GoogleUserInfo;
 use crate::repo::config::ConfigRepo;
 use crate::services::evm_rpc::EvmRpcService;
+use crate::services::jwt::JwtService;
 use crate::services::monitoring::MonitoringService;
 use crate::services::proxy::ProxyService;
-use crate::util::oauth2::GoogleUserInfo;
 
 pub fn setup_app(
+    config_repo: ConfigRepo,
     evm_rpc_service: Arc<EvmRpcService>,
     proxy_service: Arc<RwLock<ProxyService>>,
     monitoring_service: Arc<MonitoringService>,
-    config_repo: ConfigRepo,
+    jwt_service: Arc<JwtService>,
 ) -> Rocket<Build> {
     let cors = CorsOptions::default()
         .allowed_origins(AllowedOrigins::all())
@@ -38,10 +39,11 @@ pub fn setup_app(
     println!("{}", std::env::var("ROCKET_OAUTH").unwrap());
 
     rocket::build()
+        .manage(config_repo)
         .manage(evm_rpc_service)
         .manage(proxy_service)
-        .manage(config_repo)
         .manage(monitoring_service)
+        .manage(jwt_service)
         // .manage(storage)
         .register("/", catchers!(rocket_governor_catcher))
         .mount(

@@ -1,44 +1,78 @@
-use rocket::http::{CookieJar, Status};
-use rocket::request;
-use serde::Deserialize;
-use serde_json::Value;
-
-pub struct User {
-    pub username: String,
-}
-
-#[rocket::async_trait]
-impl<'r> request::FromRequest<'r> for User {
-    type Error = ();
-
-    async fn from_request(request: &'r request::Request<'_>) -> request::Outcome<User, ()> {
-        let cookies = request
-            .guard::<&CookieJar<'_>>()
-            .await
-            .expect("request cookies");
-        if let Some(cookie) = cookies.get_private("username") {
-            return request::Outcome::Success(User {
-                username: cookie.value().to_string(),
-            });
-        }
-
-        request::Outcome::Forward(Status::Unauthorized)
-    }
-}
-
-// #[derive(Deserialize)]
-// pub struct GitHubUserInfo {
-//     #[serde(default)]
-//     pub name: String,
+// use std::time::SystemTime;
+//
+// use jsonwebtoken::{
+//     decode, encode, Algorithm, DecodingKey, EncodingKey, Header, TokenData, Validation,
+// };
+// use pwhash::bcrypt;
+// use serde::{Deserialize, Serialize};
+// use uuid::Uuid;
+//
+// pub struct Hash(pub String);
+//
+// pub fn password_hash(s: String) -> Option<Hash> {
+//     bcrypt::hash(&s).ok().map(|v| Hash(v.to_string()))
 // }
-
-#[derive(Deserialize)]
-pub struct GoogleUserInfo {
-    pub names: Vec<Value>,
-}
-
-// #[derive(Deserialize)]
-// pub struct MicrosoftUserInfo {
-//     #[serde(default, rename = "displayName")]
-//     pub display_name: String,
+// pub fn password_verify(s: String, hashed_s: Hash) -> bool {
+//     bcrypt::verify(&s, &hashed_s.0)
+// }
+//
+// #[derive(Clone, Debug, Serialize, Deserialize)]
+// pub struct UserJWT {
+//     pub username: String,
+//     pub id: Uuid,
+// }
+//
+// #[derive(Clone, Debug, Serialize, Deserialize)]
+// struct MetaUserJWT {
+//     pub user: UserJWT,
+//     pub exp: u64,
+// }
+//
+// pub fn encode_jwt_user(user_jwt: UserJWT) -> Result<String, String> {
+//     let secret_key = std::env::var("JWT_SECRET_KEY")
+//         .map_err(|err| format!("Cant access \"JWT_SECRET_KEY\" var: {err}"))?;
+//
+//     let expiration = std::env::var("JWT_EXPIRATION")
+//         .map_err(|err| format!("Cant access \"JWT_EXPIRATION\" var: {err}"))?
+//         .parse::<u64>()
+//         .map_err(|err| format!("Cant parse \"JWT_EXPIRATION\" var: {err}"))?;
+//
+//     let meta_user_jwt = MetaUserJWT {
+//         user: user_jwt,
+//         exp: SystemTime::now()
+//             .duration_since(SystemTime::UNIX_EPOCH)
+//             .unwrap()
+//             .as_secs()
+//             + expiration,
+//     };
+//
+//     encode(
+//         &Header::default(),
+//         &meta_user_jwt,
+//         &EncodingKey::from_secret(secret_key.as_ref()),
+//     )
+//     .map_err(|err| format!("Can encode user structure: {err}"))
+// }
+//
+// pub fn decode_jwt_user(token: String) -> Result<UserJWT, String> {
+//     let secret_key = std::env::var("JWT_SECRET_KEY")
+//         .map_err(|err| format!("Cant access \"JWT_SECRET_KEY\" var: {err}"))?;
+//
+//     let user_jwt: TokenData<MetaUserJWT> = decode(
+//         &token,
+//         &DecodingKey::from_secret(secret_key.as_ref()),
+//         &Validation::new(Algorithm::HS256),
+//     )
+//     .map_err(|err| format!("Can decode user structure: {err}"))?;
+//
+//     let now = SystemTime::now()
+//         .duration_since(SystemTime::UNIX_EPOCH)
+//         .unwrap()
+//         .as_secs();
+//
+//     if now > user_jwt.claims.exp {
+//         return Err("Expired".to_string());
+//     }
+//
+//     Ok(user_jwt.claims.user)
 // }

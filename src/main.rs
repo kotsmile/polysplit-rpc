@@ -8,6 +8,7 @@ use rocket::tokio::{sync::RwLock, task};
 mod client;
 mod controllers;
 mod crons;
+mod guards;
 mod middleware;
 mod models;
 mod repo;
@@ -22,6 +23,7 @@ use client::{
 use repo::{cache::CacheRepo, config::ConfigRepo};
 use services::{
     evm_rpc::{EvmRpcService, RpcMetrics},
+    jwt::JwtService,
     monitoring::MonitoringService,
     proxy::ProxyService,
 };
@@ -114,6 +116,10 @@ async fn main() -> Result<()> {
         chainlist_client.clone(),
     ));
     let monitoring_service = Arc::new(MonitoringService::new(cache_repo.clone()));
+    let jwt_service = Arc::new(JwtService::new(
+        config_repo.jwt_secret_key.clone(),
+        config_repo.jwt_access_expiration.clone(),
+    ));
 
     run_tasks(
         evm_rpc_service.clone(),
@@ -130,10 +136,11 @@ async fn main() -> Result<()> {
     .await?;
 
     setup_app(
+        config_repo.clone(),
         evm_rpc_service.clone(),
         proxy_service.clone(),
         monitoring_service.clone(),
-        config_repo.clone(),
+        jwt_service.clone(),
     )
     .launch()
     .await

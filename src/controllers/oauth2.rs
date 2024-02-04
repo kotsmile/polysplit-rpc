@@ -1,24 +1,35 @@
+use std::sync::Arc;
+
 use anyhow::{Context, Error};
-use reqwest::header::AUTHORIZATION;
 use rocket::{
     get,
-    http::{Cookie, CookieJar, SameSite},
+    http::CookieJar,
     response::{Debug, Redirect},
+    State,
 };
 use rocket_oauth2::{OAuth2, TokenResponse};
 
-use crate::util::oauth2::GoogleUserInfo;
+use crate::{models::auth::GoogleUserInfo, repo::config::ConfigRepo, services::jwt::JwtService};
+
+#[get("/login/google")]
+pub fn get_login_google(oauth2: OAuth2<GoogleUserInfo>, cookies: &CookieJar<'_>) -> Redirect {
+    oauth2
+        .get_redirect(cookies, &["https://www.googleapis.com/auth/userinfo.email"])
+        .unwrap()
+}
 
 #[get("/auth/google")]
 pub async fn get_auth_google(
     token: TokenResponse<GoogleUserInfo>,
     cookies: &CookieJar<'_>,
+    jwt_service: &State<Arc<JwtService>>,
+    config_repo: &State<ConfigRepo>,
 ) -> Result<Redirect, Debug<Error>> {
     let user_info: GoogleUserInfo = reqwest::Client::builder()
         .build()
         .context("failed to build reqwest client")?
-        .get("https://people.googleapis.com/v1/people/me?personFields=names")
-        .header(AUTHORIZATION, format!("Bearer {}", token.access_token()))
+        .get("https://www.googleapis.com/oauth2/v2/userinfo")
+        .query(&[("access_token", token.access_token())])
         .send()
         .await
         .context("failed to complete request")?
@@ -26,22 +37,9 @@ pub async fn get_auth_google(
         .await
         .context("failed to deserialize response")?;
 
-    let real_name = user_info
-        .names
-        .first()
-        .and_then(|n| n.get("displayName"))
-        .and_then(|s| s.as_str())
-        .unwrap_or("");
+    jwt_service
+        .setup_cookies(cookies, user_info.email.to_string())
+        .context("failed to setup cookies")?;
 
-    cookies.add_private(
-        Cookie::build(("username", real_name.to_string()))
-            .same_site(SameSite::Lax)
-            .build(),
-    );
-    Ok(Redirect::to("http://localhost:3000"))
-}
-
-#[get("/login/google")]
-pub fn get_login_google(oauth2: OAuth2<GoogleUserInfo>, cookies: &CookieJar<'_>) -> Redirect {
-    oauth2.get_redirect(cookies, &["profile"]).unwrap()
+    Ok(Redirect::to(config_repo.frontend_url.clone()))
 }
