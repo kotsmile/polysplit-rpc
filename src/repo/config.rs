@@ -8,6 +8,7 @@ pub struct ConfigRepo {
     pub proxyseller_api_key: String,
     pub supported_chain_ids: Vec<String>,
     pub feed_max_timeout: Duration,
+    pub rocket_oauth: String,
 }
 
 fn get_env(name: &str) -> Result<String> {
@@ -29,11 +30,29 @@ impl ConfigRepo {
             .context("failed to parse feed max timeout")
             .map(|val| Duration::new(0, val * 1_000_000))?;
 
+        // oauth
+        let google_client_id = get_env("GOOGLE_CLIENT_ID")?;
+        let google_client_secret = get_env("GOOGLE_CLIENT_SECRET")?;
+        let google_redirect_uri = get_env("GOOGLE_REDIRECT_URI")?;
+
+        let rocket_oauth = format!(
+            r#"
+            {{ 
+                google =  {{
+                    provider = "Google",
+                    client_id = "{google_client_id}",
+                    client_secret = "{google_client_secret}",
+                    redirect_uri = "{google_redirect_uri}"
+                }}
+            }}"#
+        );
+
         Ok(Self {
             port,
             proxyseller_api_key,
             supported_chain_ids,
             feed_max_timeout,
+            rocket_oauth,
         })
     }
 }

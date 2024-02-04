@@ -4,8 +4,10 @@ use rocket::catchers;
 use rocket::{http::Method, routes, tokio::sync::RwLock, Build, Rocket};
 use rocket_cors::{AllowedOrigins, CorsOptions};
 use rocket_governor::rocket_governor_catcher;
+use rocket_oauth2::OAuth2;
 use rocket_okapi::{openapi_get_routes, rapidoc::*, settings::UrlObject, swagger_ui::*};
 
+use crate::controllers::oauth2;
 use crate::controllers::status;
 use crate::controllers::v1::chain;
 use crate::controllers::v1::monitoring;
@@ -13,6 +15,7 @@ use crate::repo::config::ConfigRepo;
 use crate::services::evm_rpc::EvmRpcService;
 use crate::services::monitoring::MonitoringService;
 use crate::services::proxy::ProxyService;
+use crate::util::oauth2::GoogleUserInfo;
 
 pub fn setup_app(
     evm_rpc_service: Arc<EvmRpcService>,
@@ -31,6 +34,8 @@ pub fn setup_app(
         .allow_credentials(true);
 
     std::env::set_var("ROCKET_PORT", config_repo.port.to_string());
+    std::env::set_var("ROCKET_OAUTH", config_repo.rocket_oauth.to_string());
+    println!("{}", std::env::var("ROCKET_OAUTH").unwrap());
 
     rocket::build()
         .manage(evm_rpc_service)
@@ -47,7 +52,14 @@ pub fn setup_app(
                 monitoring::get_monitoring_v1
             ],
         )
-        .mount("/", routes![chain::post_chain_v1])
+        .mount(
+            "/",
+            routes![
+                chain::post_chain_v1,
+                oauth2::get_auth_google,
+                oauth2::get_login_google
+            ],
+        )
         .mount(
             "/swagger-ui/",
             make_swagger_ui(
@@ -75,4 +87,5 @@ pub fn setup_app(
             ),
         )
         .attach(cors.to_cors().unwrap())
+        .attach(OAuth2::<GoogleUserInfo>::fairing("google"))
 }
