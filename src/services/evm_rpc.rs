@@ -28,24 +28,6 @@ pub enum EvmRpcError {
     Timeout,
 }
 
-// impl Display for EvmRpcError {
-//     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-//         match &self {
-//             EvmRpcError::Server => write!(f, "Server error"),
-//             EvmRpcError::Client => write!(f, "Client error"),
-//             EvmRpcError::Proxy(msg) => write!(f, "Proxy error: {msg}"),
-//             EvmRpcError::Internal(msg) => write!(f, "Internal error: {msg}"),
-//             EvmRpcError::Timeout => write!(f, "Timeout"),
-//         }
-//     }
-// }
-//
-// impl Debug for EvmRpcError {
-//     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-//         Display::fmt(&self, f)
-//     }
-// }
-
 #[derive(Deserialize)]
 struct EvmRpcTestResponse {
     jsonrpc: String,

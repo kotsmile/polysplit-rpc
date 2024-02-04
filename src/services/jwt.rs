@@ -23,8 +23,6 @@ pub struct JwtService {
     access_expiration: u64,
 }
 
-pub struct Hash(pub String);
-
 const ACCESS_TOKEN_KEY: &'static str = "access_token";
 
 impl JwtService {
