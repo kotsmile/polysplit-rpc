@@ -87,4 +87,4 @@ impl<T> ResponseData<T> {
 
 pub type ResponseResult<T> = Result<Json<T>, ResponseError>;
 pub type ResponseResultData<T> = ResponseResult<ResponseData<T>>;
-pub type RequestResult<'a, T> = Result<Json<T>, rocket::serde::json::Error<'a>>;
+pub type _RequestResult<'a, T> = Result<Json<T>, rocket::serde::json::Error<'a>>;

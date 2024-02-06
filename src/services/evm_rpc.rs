@@ -30,8 +30,10 @@ pub enum EvmRpcError {
 
 #[derive(Deserialize)]
 struct EvmRpcTestResponse {
-    jsonrpc: String,
-    id: u32,
+    #[serde(rename = "jsonrpc")]
+    _jsonrpc: String,
+    #[serde(rename = "id")]
+    _id: u32,
     result: String,
 }
 
