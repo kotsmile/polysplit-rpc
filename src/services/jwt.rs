@@ -3,6 +3,7 @@ use lazy_static::lazy_static;
 use rocket::http::{Cookie, CookieJar, SameSite};
 use rocket_jwt::jwt;
 use rocket_okapi::request::OpenApiFromRequest;
+use uuid::Uuid;
 
 pub struct JwtService;
 
@@ -24,6 +25,7 @@ lazy_static! {
 
 #[jwt(JWT_SECRET_KEY, exp = 10000, cookie = "access_token")]
 pub struct UserClaim {
+    pub id: Uuid,
     pub email: String,
 }
 
@@ -32,9 +34,10 @@ impl JwtService {
         Self {}
     }
 
-    pub fn setup_cookies(&self, cookies: &CookieJar<'_>, email_address: String) -> Result<()> {
+    pub fn setup_cookies(&self, cookies: &CookieJar<'_>, email: String, id: &Uuid) -> Result<()> {
         let access_token = UserClaim::sign(UserClaim {
-            email: email_address,
+            email,
+            id: id.clone(),
         });
 
         cookies.add(

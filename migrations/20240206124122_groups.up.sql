@@ -4,7 +4,7 @@ create table groups (
 
     name varchar not null,
     owner_id uuid not null,
-    hash_api_key text not null,
+    api_key text not null default '',
 
     primary key (id),
     constraint fk_owner foreign key(owner_id) references users(id)
@@ -12,6 +12,8 @@ create table groups (
 
 create table chains (
     id varchar not null unique,
+
+    name varchar not null,
 
     primary key (id)
 );

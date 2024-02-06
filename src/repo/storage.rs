@@ -1,7 +1,8 @@
 use anyhow::{Context, Result};
 use sqlx::{postgres::PgPoolOptions, Pool, Postgres};
+use uuid::Uuid;
 
-use crate::models::user::User;
+use crate::models::{Chain, Group, Rpc, User};
 
 pub struct StorageRepo {
     pool: Pool<Postgres>,
@@ -26,31 +27,92 @@ impl StorageRepo {
     pub async fn create_user(&self, new_user: &User) -> Result<Option<User>> {
         sqlx::query_as!(
             User,
-            r#"
-                insert into users (id, email) 
-                values ($1, $2) 
-                returning *
-            "#,
+            "insert into users (id, email) values ($1, $2) returning *;",
             new_user.id,
             new_user.email,
         )
         .fetch_optional(&self.pool)
         .await
-        .context("failed to insert user")
+        .context("failed to insert row in users table")
     }
 
     pub async fn get_user_by_email(&self, email: &str) -> Result<Option<User>> {
+        sqlx::query_as!(User, "select * from users where email = $1;", email)
+            .fetch_optional(&self.pool)
+            .await
+            .context("failed to select user with email")
+    }
+
+    pub async fn get_chains(&self) -> Result<Vec<Chain>> {
+        sqlx::query_as!(Chain, "select * from chains;")
+            .fetch_all(&self.pool)
+            .await
+            .context("failed to select chains in table")
+    }
+
+    pub async fn create_chain(&self, new_chain: &Chain) -> Result<Option<Chain>> {
         sqlx::query_as!(
-            User,
-            r#"
-                select * 
-                from users 
-                where email = $1
-            "#,
-            email
+            Chain,
+            "insert into chains (id, name) values ($1, $2) returning *;",
+            new_chain.id,
+            new_chain.name
         )
         .fetch_optional(&self.pool)
         .await
-        .context("failed to find user by email")
+        .context("failed to insert row in chains table")
+    }
+
+    pub async fn get_rpcs(&self) -> Result<Vec<Rpc>> {
+        sqlx::query_as!(Rpc, "select * from rpcs;")
+            .fetch_all(&self.pool)
+            .await
+            .context("failed to select from rpcs")
+    }
+
+    pub async fn get_rpcs_by_chain_id(&self, chain_id: &str) -> Result<Vec<Rpc>> {
+        sqlx::query_as!(Rpc, "select * from rpcs where chain_id = $1;", chain_id)
+            .fetch_all(&self.pool)
+            .await
+            .context("failed to select from rpcs")
+    }
+
+    pub async fn create_rpc(&self, new_rpc: &Rpc) -> Result<Option<Rpc>> {
+        sqlx::query_as!(
+            Rpc,
+            "insert into rpcs (chain_id, url) values ($1, $2) returning *;",
+            new_rpc.chain_id,
+            new_rpc.url
+        )
+        .fetch_optional(&self.pool)
+        .await
+        .context("failed to insert row in rpcs table")
+    }
+
+    pub async fn create_group(&self, new_group: &Group) -> Result<Option<Group>> {
+        sqlx::query_as!(
+            Group,
+            "insert into groups (id, name, owner_id, api_key) values ($1, $2, $3, $4) returning *;",
+            new_group.id,
+            new_group.name,
+            new_group.owner_id,
+            new_group.api_key,
+        )
+        .fetch_optional(&self.pool)
+        .await
+        .context("failed to insert row in groups table")
+    }
+
+    pub async fn get_groups_for_user(&self, user_id: &Uuid) -> Result<Vec<Group>> {
+        sqlx::query_as!(Group, "select * from groups where owner_id = $1", user_id)
+            .fetch_all(&self.pool)
+            .await
+            .context("failed to find groups for user")
+    }
+
+    pub async fn get_group_by_id(&self, group_id: &Uuid) -> Result<Option<Group>> {
+        sqlx::query_as!(Group, "select * from groups where id = $1", group_id)
+            .fetch_optional(&self.pool)
+            .await
+            .context("failed to find group")
     }
 }

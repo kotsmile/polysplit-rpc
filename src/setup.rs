@@ -51,6 +51,8 @@ pub fn setup_app(
                 v1::chain::get_metrics_v1,
                 v1::monitoring::get_monitoring_v1,
                 v2::user::get_user_me,
+                v2::groups::get_groups,
+                v2::groups::post_group,
             ],
         )
         .mount(

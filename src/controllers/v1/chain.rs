@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use anyhow::anyhow;
 use rocket::{get, http::Status, post, serde::json::Json, tokio::sync::RwLock, State};
 use rocket_governor::RocketGovernor;
 use rocket_okapi::openapi;
@@ -35,20 +36,20 @@ pub async fn post_chain_v1(
         .iter()
         .position(|val| val == chain_id)
     {
-        log::error!("chainId {chain_id} is not supported");
         monitoring_service.inc_error_income_requests().await;
         return Err(ResponseError {
             status: Status::BadRequest,
             error: format!("chainId {chain_id} is not supported yet"),
+            internal_error: Err(anyhow!("chainId {chain_id} is not supported")),
         });
     }
 
     let Some(rpcs) = evm_rpc_service.get_rpcs_for_chain_id(chain_id).await else {
-        log::error!("failed to get rpcs for chainId {chain_id}");
         monitoring_service.inc_error_income_requests().await;
         return Err(ResponseError {
             status: Status::InternalServerError,
             error: format!("No rpc provided for chainId {chain_id}"),
+            internal_error: Err(anyhow!("failed to get rpcs for chainId {chain_id}")),
         });
     };
 
@@ -82,6 +83,7 @@ pub async fn post_chain_v1(
     Err(ResponseError {
         status: Status::InternalServerError,
         error: format!("failed to request all RPCs for chainId: {chain_id}"),
+        internal_error: Err(anyhow!("failed to get rpcs for chainId {chain_id}")),
     })
 }
 
@@ -108,18 +110,18 @@ pub async fn get_metrics_v1(
         .iter()
         .position(|val| val == chain_id)
     {
-        log::error!("chainId {chain_id} is not supported");
         return Err(ResponseError {
             status: Status::BadRequest,
             error: format!("chainId {chain_id} is not supported yet"),
+            internal_error: Err(anyhow!("chainId {chain_id} is not supported")),
         });
     }
 
     let Some(rpcs) = evm_rpc_service.get_rpcs_for_chain_id(chain_id).await else {
-        log::error!("failed to get rpcs for chainId {chain_id}");
         return Err(ResponseError {
             status: Status::InternalServerError,
             error: format!("No rpc provided for chainId {chain_id}"),
+            internal_error: Err(anyhow!("failed to get rpcs for chainId {chain_id}")),
         });
     };
 

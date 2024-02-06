@@ -4,7 +4,7 @@ use anyhow::{Context, Result};
 use uuid::Uuid;
 
 use crate::{
-    models::user::{NewUser, User},
+    models::{NewUser, User},
     repo::storage::StorageRepo,
 };
 

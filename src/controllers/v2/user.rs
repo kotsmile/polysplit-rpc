@@ -1,11 +1,11 @@
 use std::sync::Arc;
 
-use anyhow::Context;
+use anyhow::{anyhow, Context};
 use rocket::{get, http::Status, State};
 use rocket_okapi::openapi;
 
 use crate::{
-    models::user::User,
+    models::User,
     services::{jwt::UserClaim, user::UserService},
     util::controllers::{ResponseData, ResponseError, ResponseResultData},
 };
@@ -20,13 +20,15 @@ pub async fn get_user_me(
         .get_user_by_email(&user.email)
         .await
         .context("failed to find user")
-        .map_err(|_| ResponseError {
+        .map_err(|err| ResponseError {
             error: "Failed to find user".to_string(),
             status: Status::InternalServerError,
+            internal_error: Err(err),
         })?
         .ok_or(ResponseError {
             error: "Failed to find user".to_string(),
             status: Status::InternalServerError,
+            internal_error: Err(anyhow!("no user was found")),
         })?;
 
     Ok(ResponseData::build(user))

@@ -42,7 +42,7 @@ impl ConfigRepo {
 
         let rocket_oauth = format!(
             r#"
-            {{ 
+            {{
                 google =  {{
                     provider = "Google",
                     client_id = "{google_client_id}",

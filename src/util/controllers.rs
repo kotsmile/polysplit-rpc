@@ -1,5 +1,4 @@
-use log::error;
-
+use anyhow::{Context, Result};
 use rocket::{
     http::{ContentType, Status},
     response::{self, Responder, Response},
@@ -11,13 +10,15 @@ use rocket_okapi::{
     OpenApiError,
 };
 use schemars::JsonSchema;
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 
-#[derive(Debug, Deserialize, Serialize, JsonSchema, PartialEq, Eq)]
+#[derive(Debug, Serialize, JsonSchema)]
 pub struct ResponseError {
     pub error: String,
     #[serde(skip)]
     pub status: Status,
+    #[serde(skip)]
+    pub internal_error: Result<()>,
 }
 
 impl OpenApiResponderInner for ResponseError {
@@ -48,6 +49,10 @@ impl std::error::Error for ResponseError {}
 impl<'r> Responder<'r, 'static> for ResponseError {
     fn respond_to(self, _: &'r Request<'_>) -> response::Result<'static> {
         let body = serde_json::to_string(&self).unwrap();
+        if let Err(err) = self.internal_error {
+            log::error!("{err}");
+        }
+
         Response::build()
             .sized_body(body.len(), std::io::Cursor::new(body))
             .header(ContentType::JSON)
@@ -60,16 +65,15 @@ impl From<rocket::serde::json::Error<'_>> for ResponseError {
     fn from(err: rocket::serde::json::Error<'_>) -> Self {
         use rocket::serde::json::Error::*;
         match err {
-            Io(io_err) => {
-                error!("IO error: {io_err}");
-                ResponseError {
-                    error: "IO Error".to_owned(),
-                    status: Status::UnprocessableEntity,
-                }
-            }
-            Parse(_raw_data, _parse_error) => ResponseError {
+            Io(io_err) => ResponseError {
+                error: "IO Error".to_owned(),
+                status: Status::UnprocessableEntity,
+                internal_error: Err(io_err).context("io error"),
+            },
+            Parse(_raw_data, parse_error) => ResponseError {
                 error: "Parse Error".to_owned(),
                 status: Status::UnprocessableEntity,
+                internal_error: Err(parse_error).context("parse error"),
             },
         }
     }
@@ -88,4 +92,4 @@ impl<T> ResponseData<T> {
 
 pub type ResponseResult<T> = Result<Json<T>, ResponseError>;
 pub type ResponseResultData<T> = ResponseResult<ResponseData<T>>;
-pub type _RequestResult<'a, T> = Result<Json<T>, rocket::serde::json::Error<'a>>;
+pub type RequestResult<'a, T> = Result<Json<T>, rocket::serde::json::Error<'a>>;
