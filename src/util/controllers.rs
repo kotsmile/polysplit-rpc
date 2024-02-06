@@ -1,4 +1,5 @@
 use log::error;
+
 use rocket::{
     http::{ContentType, Status},
     response::{self, Responder, Response},
