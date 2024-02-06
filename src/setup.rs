@@ -6,17 +6,13 @@ use rocket_governor::rocket_governor_catcher;
 use rocket_oauth2::OAuth2;
 use rocket_okapi::{openapi_get_routes, rapidoc::*, settings::UrlObject, swagger_ui::*};
 
-use crate::controllers::oauth2;
 use crate::controllers::status;
-use crate::controllers::v1::chain;
-use crate::controllers::v1::monitoring;
-use crate::controllers::v2::user;
-use crate::models::auth::GoogleUserInfo;
+use crate::controllers::{v1, v2};
 use crate::repo::config::ConfigRepo;
-use crate::services::evm_rpc::EvmRpcService;
-use crate::services::jwt::JwtService;
-use crate::services::monitoring::MonitoringService;
-use crate::services::proxy::ProxyService;
+use crate::services::{
+    evm_rpc::EvmRpcService, jwt::JwtService, monitoring::MonitoringService, proxy::ProxyService,
+    user::UserService,
+};
 
 pub fn setup_app(
     config_repo: ConfigRepo,
@@ -24,6 +20,7 @@ pub fn setup_app(
     proxy_service: Arc<RwLock<ProxyService>>,
     monitoring_service: Arc<MonitoringService>,
     jwt_service: Arc<JwtService>,
+    user_service: Arc<UserService>,
 ) -> Rocket<Build> {
     let cors = CorsOptions::default()
         .allowed_origins(AllowedOrigins::all())
@@ -44,23 +41,24 @@ pub fn setup_app(
         .manage(proxy_service)
         .manage(monitoring_service)
         .manage(jwt_service)
+        .manage(user_service)
         // .manage(storage)
         .register("/", catchers!(rocket_governor_catcher))
         .mount(
             "/",
             openapi_get_routes![
                 status::get_health,
-                chain::get_metrics_v1,
-                monitoring::get_monitoring_v1,
-                user::get_user_me,
+                v1::chain::get_metrics_v1,
+                v1::monitoring::get_monitoring_v1,
+                v2::user::get_user_me,
             ],
         )
         .mount(
             "/",
             routes![
-                chain::post_chain_v1,
-                oauth2::get_auth_google,
-                oauth2::get_login_google
+                v1::chain::post_chain_v1,
+                v2::oauth2::get_auth_google,
+                v2::oauth2::get_login_google
             ],
         )
         .mount(
@@ -90,5 +88,5 @@ pub fn setup_app(
             ),
         )
         .attach(cors.to_cors().unwrap())
-        .attach(OAuth2::<GoogleUserInfo>::fairing("google"))
+        .attach(OAuth2::<v2::oauth2::GoogleUserInfo>::fairing("google"))
 }

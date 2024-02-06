@@ -9,6 +9,7 @@ pub struct ConfigRepo {
     pub supported_chain_ids: Vec<String>,
     pub feed_max_timeout: Duration,
     pub frontend_url: String,
+    pub database_url: String,
     pub rocket_oauth: String,
 }
 
@@ -32,11 +33,7 @@ impl ConfigRepo {
             .map(|val| Duration::new(0, val * 1_000_000))?;
 
         let frontend_url = get_env("FRONTEND_URL")?;
-        // jwt
-        let jwt_secret_key = get_env("JWT_SECRET_KEY")?;
-        let jwt_access_expiration = get_env("JWT_EXPIRATION_ACCESS")?
-            .parse::<u64>()
-            .context("failed to parse access expiration")?;
+        let database_url = get_env("DATABASE_URL")?;
 
         // oauth
         let google_client_id = get_env("GOOGLE_CLIENT_ID")?;
@@ -60,6 +57,7 @@ impl ConfigRepo {
             proxyseller_api_key,
             supported_chain_ids,
             frontend_url,
+            database_url,
             feed_max_timeout,
             rocket_oauth,
         })

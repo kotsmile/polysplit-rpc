@@ -62,3 +62,13 @@ impl OpenApiFromRequest<'_> for UserClaim {
         Ok(rocket_okapi::okapi::openapi3::Responses::default())
     }
 }
+
+// impl<'r> OpenApiFromRequest<'r> for MyDB {
+//     fn from_request_input(
+//         _gen: &mut OpenApiGenerator,
+//         _name: String,
+//         _required: bool,
+//     ) -> rocket_okapi::Result<RequestHeaderInput> {
+//         Ok(RequestHeaderInput::None)
+//     }
+// }

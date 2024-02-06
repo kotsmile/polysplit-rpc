@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
-use anyhow::bail;
+use anyhow::{anyhow, bail, Context};
 use reqwest::Client;
 use rocket::tokio::sync::RwLock;
 use schemars::JsonSchema;
@@ -21,9 +21,9 @@ pub enum EvmRpcError {
     #[error("client error")]
     Client,
     #[error("internal error: {0}")]
-    Internal(String),
+    Internal(anyhow::Error),
     #[error("proxy error: {0}")]
-    Proxy(String),
+    Proxy(anyhow::Error),
     #[error("rpc timeout")]
     Timeout,
 }
@@ -67,17 +67,15 @@ impl EvmRpcService {
         match proxy_config {
             Some(proxy_config) => Client::builder()
                 .timeout(timeout)
-                .proxy(
-                    proxy_config
-                        .to_proxy()
-                        .map_err(|err| EvmRpcError::Proxy(format!("{err}")))?,
-                )
+                .proxy(proxy_config.to_proxy().map_err(EvmRpcError::Proxy)?)
                 .build()
-                .map_err(|err| EvmRpcError::Internal(format!("{err}"))),
+                .context("failed to build http client")
+                .map_err(EvmRpcError::Internal),
             None => Client::builder()
                 .timeout(timeout)
                 .build()
-                .map_err(|err| EvmRpcError::Internal(format!("{err}"))),
+                .context("failed to build http client")
+                .map_err(EvmRpcError::Internal),
         }
     }
 
@@ -101,13 +99,14 @@ impl EvmRpcService {
                     return response
                         .json::<Value>()
                         .await
-                        .map_err(|err| EvmRpcError::Internal(format!("parse error: {err}")));
+                        .context("failed to parse response")
+                        .map_err(EvmRpcError::Internal);
                 } else if response.status().is_client_error() {
                     return Err(EvmRpcError::Client);
                 } else if response.status().is_server_error() {
                     return Err(EvmRpcError::Server);
                 } else {
-                    return Err(EvmRpcError::Internal(format!(
+                    return Err(EvmRpcError::Internal(anyhow!(
                         "unknown error: {}",
                         response.status()
                     )));
@@ -117,7 +116,7 @@ impl EvmRpcService {
                 if err.is_timeout() {
                     return Err(EvmRpcError::Timeout);
                 } else {
-                    return Err(EvmRpcError::Internal(format!("unknow error: {err}")));
+                    return Err(EvmRpcError::Internal(anyhow!("unknown error: {err}")));
                 }
             }
         }

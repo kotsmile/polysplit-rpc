@@ -1,0 +1,5 @@
+{
+  "name": "polysplit-rpc",
+  "adapter": "postgres",
+  "projectPaths": ["./migrations"]
+}
