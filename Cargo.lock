@@ -1921,6 +1921,7 @@ dependencies = [
  "sqlx",
  "thiserror",
  "tokio-cron-scheduler",
+ "url",
  "uuid 1.7.0",
 ]
 

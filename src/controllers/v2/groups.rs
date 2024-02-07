@@ -5,6 +5,7 @@ use rocket::{get, http::Status, post, State};
 use rocket_okapi::openapi;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+use url::Url;
 use uuid::Uuid;
 
 use crate::{
@@ -73,6 +74,24 @@ pub async fn post_group_rpc(
     group_service: &State<Arc<GroupService>>,
 ) -> ResponseResultData<Rpc> {
     let new_rpc = new_rpc?.into_inner();
+    match Url::parse(&new_rpc.url) {
+        Ok(url_) => {
+            if url_.scheme() != "https" {
+                return Err(ResponseError {
+                    error: format!("Unsupported schema url"),
+                    status: Status::BadRequest,
+                    internal_error: Err(anyhow!("unsupported schema")),
+                });
+            }
+        }
+        Err(err) => {
+            return Err(ResponseError {
+                error: format!("Bad format of url: {err}"),
+                status: Status::BadRequest,
+                internal_error: Err(err).context("failed to pares url"),
+            });
+        }
+    }
 
     let group = group_service
         .get_group_by_id(&group_id)

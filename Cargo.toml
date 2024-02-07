@@ -37,3 +37,4 @@ futures = "0.3.30"
 rocket_cors = "0.6.0"
 rocket-governor = { version = "0.2.0-rc.1", features = ["logger"] }
 sqlx = { version = "0.7", features = [ "runtime-tokio-rustls", "postgres", "chrono", "macros", "migrate", "uuid", "json" ] }
+url = { version = "2.5.0" }
