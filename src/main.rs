@@ -24,8 +24,8 @@ use client::{
 };
 use repo::{cache::CacheRepo, config::ConfigRepo, storage::StorageRepo};
 use services::{
-    evm_rpc::EvmRpcService, jwt::JwtService, monitoring::MonitoringService, proxy::ProxyService,
-    user::UserService,
+    evm_rpc::EvmRpcService, group::GroupService, jwt::JwtService, monitoring::MonitoringService,
+    proxy::ProxyService, user::UserService,
 };
 use setup::setup_app;
 use tasks::run_tasks;
@@ -45,7 +45,7 @@ async fn main() -> Result<()> {
 
     let proxyseller_client = Box::new(ProxysellerClient::new(
         config_repo.proxyseller_api_key.clone(),
-        // TODO(@kotsmile): move orders to envs
+        // TODO:(@kotsmile) move orders to envs
         vec![ProxysellerOrder(
             String::from("mix"),
             String::from("1973991"),
@@ -62,6 +62,7 @@ async fn main() -> Result<()> {
     let monitoring_service = Arc::new(MonitoringService::new(cache_repo.clone()));
     let jwt_service = Arc::new(JwtService::new());
     let user_service = Arc::new(UserService::new(storage_repo.clone()));
+    let group_service = Arc::new(GroupService::new(storage_repo.clone()));
 
     run_tasks(
         evm_rpc_service.clone(),
@@ -78,12 +79,13 @@ async fn main() -> Result<()> {
     .await?;
 
     setup_app(
-        config_repo.clone(),
-        evm_rpc_service.clone(),
-        proxy_service.clone(),
-        monitoring_service.clone(),
-        jwt_service.clone(),
-        user_service.clone(),
+        config_repo,
+        evm_rpc_service,
+        proxy_service,
+        monitoring_service,
+        jwt_service,
+        user_service,
+        group_service,
     )
     .launch()
     .await

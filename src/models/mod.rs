@@ -51,3 +51,9 @@ pub struct Rpc {
     pub chain_id: String,
     pub url: String,
 }
+
+#[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
+pub struct NewRpc {
+    pub chain_id: String,
+    pub url: String,
+}

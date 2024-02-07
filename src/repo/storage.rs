@@ -1,8 +1,8 @@
-use anyhow::{Context, Result};
+use anyhow::{bail, Context, Result};
 use sqlx::{postgres::PgPoolOptions, Pool, Postgres};
 use uuid::Uuid;
 
-use crate::models::{Chain, Group, Rpc, User};
+use crate::models::{Chain, Group, NewRpc, Rpc, User};
 
 pub struct StorageRepo {
     pool: Pool<Postgres>,
@@ -76,7 +76,7 @@ impl StorageRepo {
             .context("failed to select from rpcs")
     }
 
-    pub async fn create_rpc(&self, new_rpc: &Rpc) -> Result<Option<Rpc>> {
+    pub async fn create_rpc(&self, new_rpc: &NewRpc) -> Result<Option<Rpc>> {
         sqlx::query_as!(
             Rpc,
             "insert into rpcs (chain_id, url) values ($1, $2) returning *;",
@@ -133,8 +133,64 @@ impl StorageRepo {
         .context("failed to get rpcs for group")
     }
 
-    pub async fn add_group_rpc(&self, group_id: &Uuid, rpc: &Rpc) -> Result<Option<()>> {
-        todo!()
+    pub async fn get_rpc_by_url(&self, url: &str) -> Result<Option<Rpc>> {
+        sqlx::query_as!(Rpc, "select * from rpcs where url = $1", url)
+            .fetch_optional(&self.pool)
+            .await
+            .context("failed to find rpc")
+    }
+
+    pub async fn create_and_add_rpc_to_group(
+        &self,
+        group_id: &Uuid,
+        new_rpc: &NewRpc,
+    ) -> Result<Rpc> {
+        let mut tx = self
+            .pool
+            .begin()
+            .await
+            .context("failed to init transaction")?;
+
+        let rpc = sqlx::query_as!(
+            Rpc,
+            "insert into rpcs(chain_id, url) values ($1, $2) returning *;",
+            new_rpc.chain_id,
+            new_rpc.url
+        )
+        .fetch_optional(&mut *tx)
+        .await
+        .context("failed to insert new rpc")?;
+
+        let Some(rpc) = rpc else {
+            bail!("failed to retrieve rpc after inserting it")
+        };
+
+        sqlx::query!(
+            "insert into groups_rpcs(group_id,rpc_id) values ($1, $2)",
+            group_id,
+            rpc.id,
+        )
+        .execute(&mut *tx)
+        .await
+        .context("failed to insert new group rpc pair")?;
+
+        tx.commit()
+            .await
+            .context("failed to finalize transaction")?;
+
+        Ok(rpc)
+    }
+
+    pub async fn add_group_rpc(&self, group_id: &Uuid, rpc_id: &i32) -> Result<()> {
+        sqlx::query!(
+            "insert into groups_rpcs(group_id, rpc_id) values ($1, $2)",
+            group_id,
+            rpc_id
+        )
+        .execute(&self.pool)
+        .await
+        .context("failed to insert rpc group record")
+        .map(|_| {})
     }
 
     // pub async fn get_group_rpcs(&self, group_id:&Uuid) -> Result<>

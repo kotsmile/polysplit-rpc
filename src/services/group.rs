@@ -4,7 +4,7 @@ use anyhow::{Context, Result};
 use uuid::Uuid;
 
 use crate::{
-    models::{Group, NewGroup, NewUser, Rpc, User},
+    models::{Group, NewGroup, NewRpc, NewUser, Rpc, User},
     repo::storage::StorageRepo,
 };
 
@@ -48,5 +48,27 @@ impl GroupService {
             .get_group_rpcs(group_id)
             .await
             .context("failed to request rpcs for group")
+    }
+
+    pub async fn add_rpc_to_group(&self, group_id: &Uuid, new_rpc: &NewRpc) -> Result<Rpc> {
+        let rpc = self
+            .storage_repo
+            .get_rpc_by_url(&new_rpc.url)
+            .await
+            .context("failed to request rpc")?;
+
+        match rpc {
+            Some(rpc) => self
+                .storage_repo
+                .add_group_rpc(group_id, &rpc.id)
+                .await
+                .context("failed to add rpc to group")
+                .map(|_| rpc),
+            None => self
+                .storage_repo
+                .create_and_add_rpc_to_group(group_id, new_rpc)
+                .await
+                .context("failed to create rpc and add it to group"),
+        }
     }
 }

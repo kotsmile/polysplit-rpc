@@ -9,6 +9,7 @@ use rocket_okapi::{openapi_get_routes, rapidoc::*, settings::UrlObject, swagger_
 use crate::controllers::status;
 use crate::controllers::{v1, v2};
 use crate::repo::config::ConfigRepo;
+use crate::services::group::GroupService;
 use crate::services::{
     evm_rpc::EvmRpcService, jwt::JwtService, monitoring::MonitoringService, proxy::ProxyService,
     user::UserService,
@@ -21,6 +22,7 @@ pub fn setup_app(
     monitoring_service: Arc<MonitoringService>,
     jwt_service: Arc<JwtService>,
     user_service: Arc<UserService>,
+    group_service: Arc<GroupService>,
 ) -> Rocket<Build> {
     let cors = CorsOptions::default()
         .allowed_origins(AllowedOrigins::all())
@@ -42,6 +44,7 @@ pub fn setup_app(
         .manage(monitoring_service)
         .manage(jwt_service)
         .manage(user_service)
+        .manage(group_service)
         // .manage(storage)
         .register("/", catchers!(rocket_governor_catcher))
         .mount(
@@ -56,6 +59,7 @@ pub fn setup_app(
                 v2::groups::get_groups,
                 v2::groups::post_group,
                 v2::groups::get_group_rpcs,
+                v2::groups::post_group_rpc
             ],
         )
         .mount(
