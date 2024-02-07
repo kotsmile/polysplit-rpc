@@ -8,18 +8,18 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::{
-    models::Group,
+    models::{Group, Rpc},
     services::{group::GroupService, jwt::UserClaim},
     util::controllers::{RequestResult, ResponseData, ResponseError, ResponseResultData},
 };
 
 #[openapi(tag = "Groups")]
-#[get("/v2/groups/<group_id>/rpc")]
-pub async fn get_groups_rpcs(
+#[get("/v2/groups/<group_id>/rpcs")]
+pub async fn get_group_rpcs(
     group_id: Uuid,
     user: UserClaim,
     group_service: &State<Arc<GroupService>>,
-) -> ResponseResultData<Vec<Group>> {
+) -> ResponseResultData<Vec<Rpc>> {
     let group = group_service
         .get_group_by_id(&group_id)
         .await
@@ -46,7 +46,16 @@ pub async fn get_groups_rpcs(
         });
     }
 
-    todo!()
+    group_service
+        .get_group_rpcs(&group_id)
+        .await
+        .context("failed to request rpcs for group")
+        .map_err(|err| ResponseError {
+            status: Status::InternalServerError,
+            error: format!("Failed to find rpcs"),
+            internal_error: Err(err),
+        })
+        .map(ResponseData::build)
 }
 
 #[openapi(tag = "Groups")]

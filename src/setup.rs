@@ -48,17 +48,22 @@ pub fn setup_app(
             "/",
             openapi_get_routes![
                 status::get_health,
+                // v1
                 v1::chain::get_metrics_v1,
                 v1::monitoring::get_monitoring_v1,
+                // v2
                 v2::user::get_user_me,
                 v2::groups::get_groups,
                 v2::groups::post_group,
+                v2::groups::get_group_rpcs,
             ],
         )
         .mount(
             "/",
             routes![
+                // v1
                 v1::chain::post_chain_v1,
+                // v2
                 v2::oauth2::get_auth_google,
                 v2::oauth2::get_login_google
             ],

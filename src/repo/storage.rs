@@ -115,4 +115,27 @@ impl StorageRepo {
             .await
             .context("failed to find group")
     }
+
+    pub async fn get_group_rpcs(&self, group_id: &Uuid) -> Result<Vec<Rpc>> {
+        sqlx::query_as!(
+            Rpc,
+            r#"
+                select r.id, r.chain_id, r.url 
+                from rpcs r 
+                left join groups_rpcs 
+                on groups_rpcs.rpc_id = r.id 
+                where groups_rpcs.group_id = $1
+            "#,
+            group_id
+        )
+        .fetch_all(&self.pool)
+        .await
+        .context("failed to get rpcs for group")
+    }
+
+    pub async fn add_group_rpc(&self, group_id: &Uuid, rpc: &Rpc) -> Result<Option<()>> {
+        todo!()
+    }
+
+    // pub async fn get_group_rpcs(&self, group_id:&Uuid) -> Result<>
 }

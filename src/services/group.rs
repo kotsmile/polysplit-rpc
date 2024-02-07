@@ -43,5 +43,10 @@ impl GroupService {
             .context("failed to find group by id")
     }
 
-    // pub async fn get_groups_rpc(&self, group_id: &Uuid) -> Result<Vec<Rpc>> {}
+    pub async fn get_group_rpcs(&self, group_id: &Uuid) -> Result<Vec<Rpc>> {
+        self.storage_repo
+            .get_group_rpcs(group_id)
+            .await
+            .context("failed to request rpcs for group")
+    }
 }
