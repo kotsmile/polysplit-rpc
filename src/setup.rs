@@ -6,6 +6,7 @@ use rocket_governor::rocket_governor_catcher;
 use rocket_oauth2::OAuth2;
 use rocket_okapi::{openapi_get_routes, rapidoc::*, settings::UrlObject, swagger_ui::*};
 
+use crate::controllers::oauth2;
 use crate::controllers::status;
 use crate::controllers::{v1, v2};
 use crate::repo::config::ConfigRepo;
@@ -26,7 +27,6 @@ pub fn setup_app(
 ) -> Rocket<Build> {
     std::env::set_var("ROCKET_PORT", config_repo.port.to_string());
     std::env::set_var("ROCKET_OAUTH", config_repo.rocket_oauth.to_string());
-
     rocket::build()
         .manage(config_repo)
         .manage(evm_rpc_service)
@@ -49,17 +49,19 @@ pub fn setup_app(
                 v2::groups::get_groups,
                 v2::groups::post_group,
                 v2::groups::get_group_rpcs,
-                v2::groups::post_group_rpc
+                v2::groups::post_group_rpc,
+                v2::groups::update_group_api_key
             ],
         )
         .mount(
             "/",
             routes![
+                oauth2::get_auth_google,
+                oauth2::get_login_google,
                 // v1
                 v1::chain::post_chain_v1,
                 // v2
-                v2::oauth2::get_auth_google,
-                v2::oauth2::get_login_google
+                v2::chain::post_chain_v2
             ],
         )
         .mount(
@@ -101,5 +103,5 @@ pub fn setup_app(
                 .to_cors()
                 .unwrap(),
         )
-        .attach(OAuth2::<v2::oauth2::GoogleUserInfo>::fairing("google"))
+        .attach(OAuth2::<oauth2::GoogleUserInfo>::fairing("google"))
 }

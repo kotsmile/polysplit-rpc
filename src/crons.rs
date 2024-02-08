@@ -105,7 +105,7 @@ pub async fn rpc_feed_cron(
                             &rpc.url,
                             proxy_config,
                             feed_max_timeout,
-                            // TODO(@kotsmile): remove hard code
+                            // TODO: remove hardcode
                             3,
                         )
                         .await;

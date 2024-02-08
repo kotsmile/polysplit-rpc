@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use anyhow::{anyhow, Context};
-use rocket::{get, http::Status, post, State};
+use rocket::{get, http::Status, patch, post, State};
 use rocket_okapi::openapi;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -21,31 +21,15 @@ pub async fn get_group_rpcs(
     user: UserClaim,
     group_service: &State<Arc<GroupService>>,
 ) -> ResponseResultData<Vec<Rpc>> {
-    let group = group_service
-        .get_group_by_id(&group_id)
+    let _ = group_service
+        .get_group_with_owner(&user.id, &group_id)
         .await
-        .context("failed to find group by id")
+        .context("no group with owner id")
         .map_err(|err| ResponseError {
-            status: Status::InternalServerError,
-            error: format!("Failed to find group"),
-            internal_error: Err(err),
-        })?;
-
-    let Some(group) = group else {
-        return Err(ResponseError {
             status: Status::NotFound,
             error: format!("Failed to find group"),
-            internal_error: Err(anyhow!("no group was found for: {group_id}")),
-        });
-    };
-
-    if group.owner_id != user.id {
-        return Err(ResponseError {
-            status: Status::Forbidden,
-            error: format!("Not a owner of group"),
-            internal_error: Err(anyhow!("user {} is not owner of group {group_id}", user.id)),
-        });
-    }
+            internal_error: Err(anyhow!("no group was found for: {group_id}: {err}")),
+        })?;
 
     group_service
         .get_group_rpcs(&group_id)
@@ -93,31 +77,15 @@ pub async fn post_group_rpc(
         }
     }
 
-    let group = group_service
-        .get_group_by_id(&group_id)
+    let _ = group_service
+        .get_group_with_owner(&user.id, &group_id)
         .await
-        .context("failed to find group by id")
+        .context("no group with owner id")
         .map_err(|err| ResponseError {
-            status: Status::InternalServerError,
-            error: format!("Failed to find group"),
-            internal_error: Err(err),
-        })?;
-
-    let Some(group) = group else {
-        return Err(ResponseError {
             status: Status::NotFound,
             error: format!("Failed to find group"),
-            internal_error: Err(anyhow!("no group was found for: {group_id}")),
-        });
-    };
-
-    if group.owner_id != user.id {
-        return Err(ResponseError {
-            status: Status::Forbidden,
-            error: format!("Not a owner of group"),
-            internal_error: Err(anyhow!("user {} is not owner of group {group_id}", user.id)),
-        });
-    }
+            internal_error: Err(anyhow!("no group was found for: {group_id}: {err}")),
+        })?;
 
     group_service
         .add_rpc_to_group(
@@ -135,6 +103,60 @@ pub async fn post_group_rpc(
             error: format!("Failed to add rpc to group"),
         })
         .map(ResponseData::build)
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
+pub struct UpdateApiKeyResponse {
+    pub api_key: String,
+}
+
+#[openapi(tag = "Groups")]
+#[patch("/v2/groups/<group_id>/api_key")]
+pub async fn update_group_api_key(
+    group_id: Uuid,
+    user: UserClaim,
+    group_service: &State<Arc<GroupService>>,
+) -> ResponseResultData<UpdateApiKeyResponse> {
+    let _ = group_service
+        .get_group_with_owner(&user.id, &group_id)
+        .await
+        .context("no group with owner id")
+        .map_err(|err| ResponseError {
+            status: Status::NotFound,
+            error: format!("Failed to find group"),
+            internal_error: Err(anyhow!("no group was found for: {group_id}: {err}")),
+        })?;
+
+    let api_key = group_service
+        .update_api_key(&group_id)
+        .await
+        .context("failed to update api key")
+        .map_err(|err| ResponseError {
+            status: Status::InternalServerError,
+            error: format!("Internal error"),
+            internal_error: Err(err),
+        })?;
+
+    Ok(ResponseData::build(UpdateApiKeyResponse { api_key }))
+
+    //
+    // group_service
+    //     .create_group(&user.id, &new_group.name)
+    //     .await
+    //     .context("failed to create group for user")
+    //     .map_err(|err| ResponseError {
+    //         error: format!("Failed to create new group"),
+    //         status: Status::InternalServerError,
+    //         internal_error: Err(err),
+    //     })
+    //     .and_then(|val| {
+    //         val.ok_or(ResponseError {
+    //             error: format!("Failed to create new group"),
+    //             status: Status::InternalServerError,
+    //             internal_error: Err(anyhow!("failed to find created group")),
+    //         })
+    //     })
+    //     .map(ResponseData::build)
 }
 
 #[openapi(tag = "Groups")]
