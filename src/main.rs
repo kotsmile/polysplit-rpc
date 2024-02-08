@@ -67,6 +67,7 @@ async fn main() -> Result<()> {
 
     run_tasks(
         evm_rpc_service.clone(),
+        group_service.clone(),
         proxy_service.clone(),
         config_repo.clone(),
     )

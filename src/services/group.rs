@@ -54,11 +54,18 @@ impl GroupService {
             .map(|v| v.api_key)
     }
 
-    pub async fn get_groups(&self, user_id: &Uuid) -> Result<Vec<Group>> {
+    pub async fn get_groups_for_user(&self, user_id: &Uuid) -> Result<Vec<Group>> {
         self.storage_repo
             .get_groups_for_user(user_id)
             .await
             .context("failed to find groups for user")
+    }
+
+    pub async fn get_groups(&self) -> Result<Vec<Group>> {
+        self.storage_repo
+            .get_groups()
+            .await
+            .context("failed to find groups")
     }
 
     pub async fn get_group_by_id(&self, group_id: &Uuid) -> Result<Option<Group>> {

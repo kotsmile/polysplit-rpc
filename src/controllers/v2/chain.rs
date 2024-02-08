@@ -55,9 +55,8 @@ pub async fn post_chain_v2(
     for i in 1..3 {
         for rpc in &rpcs {
             let response = evm_rpc_service
-                // TODO(@kotsmile): add proxy handling
                 .rpc_request(
-                    &rpc.url,
+                    &rpc,
                     proxy_config,
                     &rpc_call,
                     config_repo.feed_max_timeout * i,
@@ -66,7 +65,7 @@ pub async fn post_chain_v2(
 
             match response {
                 Ok(val) => {
-                    log::info!("picked rpc: {}", rpc.url);
+                    log::info!("picked rpc: {}", rpc);
                     monitoring_service.inc_success_income_requests().await;
                     return Ok(Json(val));
                 }

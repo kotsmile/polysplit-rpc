@@ -88,6 +88,13 @@ impl StorageRepo {
         .context("failed to insert row in rpcs table")
     }
 
+    pub async fn get_groups(&self) -> Result<Vec<Group>> {
+        sqlx::query_as!(Group, "select * from groups")
+            .fetch_all(&self.pool)
+            .await
+            .context("failed to get all groups")
+    }
+
     pub async fn create_group(&self, new_group: &Group) -> Result<Option<Group>> {
         sqlx::query_as!(
             Group,

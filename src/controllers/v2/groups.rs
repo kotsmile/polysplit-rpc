@@ -166,7 +166,7 @@ pub async fn get_groups(
     group_service: &State<Arc<GroupService>>,
 ) -> ResponseResultData<Vec<Group>> {
     group_service
-        .get_groups(&user.id)
+        .get_groups_for_user(&user.id)
         .await
         .context("failed to get all groups for user")
         .map_err(|err| ResponseError {

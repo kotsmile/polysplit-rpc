@@ -12,7 +12,7 @@ pub struct CacheRepo {
     chain_id_to_rpcs_cache: Cache<String, Vec<(String, RpcMetrics)>>,
     monitoring: Monitoring,
     user_to_monitoring: HashMap<Uuid, Monitoring>,
-    api_key_to_rpcs: HashMap<String, Vec<Rpc>>,
+    api_key_to_rpcs: HashMap<String, Vec<String>>,
 }
 
 impl CacheRepo {
@@ -61,13 +61,13 @@ impl CacheRepo {
         format!("{api_key}_{chain_id}")
     }
 
-    pub fn get_rpcs_for_api_key(&self, api_key: &str, chain_id: &str) -> Option<Vec<Rpc>> {
+    pub fn get_rpcs_for_api_key(&self, api_key: &str, chain_id: &str) -> Option<Vec<String>> {
         self.api_key_to_rpcs
             .get(&Self::get_map_key(api_key, chain_id))
             .map(|v| v.clone())
     }
 
-    pub fn set_rpcs_for_api_key(&mut self, api_key: &str, chain_id: &str, rpcs: Vec<Rpc>) {
+    pub fn set_rpcs_for_api_key(&mut self, api_key: &str, chain_id: &str, rpcs: Vec<String>) {
         self.api_key_to_rpcs
             .insert(Self::get_map_key(api_key, chain_id), rpcs);
     }

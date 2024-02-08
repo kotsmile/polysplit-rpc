@@ -228,10 +228,17 @@ impl EvmRpcService {
         self.cache_repo.read().await.get_rpcs_for_chain_id(chain_id)
     }
 
-    pub async fn get_rpcs_for_api_key(&self, api_key: &str, chain_id: &str) -> Option<Vec<Rpc>> {
+    pub async fn get_rpcs_for_api_key(&self, api_key: &str, chain_id: &str) -> Option<Vec<String>> {
         self.cache_repo
             .read()
             .await
             .get_rpcs_for_api_key(api_key, chain_id)
+    }
+
+    pub async fn set_rpcs_for_api_key(&self, api_key: &str, chain_id: &str, rpcs: Vec<String>) {
+        self.cache_repo
+            .write()
+            .await
+            .set_rpcs_for_api_key(api_key, chain_id, rpcs);
     }
 }
