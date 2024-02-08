@@ -44,7 +44,7 @@ pub async fn post_chain_v1(
         });
     }
 
-    let Some(rpcs) = evm_rpc_service.get_rpcs_for_chain_id(chain_id).await else {
+    let Some(rpcs) = evm_rpc_service.get_rpcs_for_chain_id_cache(chain_id).await else {
         monitoring_service.inc_error_income_requests().await;
         return Err(ResponseError {
             status: Status::InternalServerError,
@@ -117,7 +117,7 @@ pub async fn get_metrics_v1(
         });
     }
 
-    let Some(rpcs) = evm_rpc_service.get_rpcs_for_chain_id(chain_id).await else {
+    let Some(rpcs) = evm_rpc_service.get_rpcs_for_chain_id_cache(chain_id).await else {
         return Err(ResponseError {
             status: Status::InternalServerError,
             error: format!("No rpc provided for chainId {chain_id}"),

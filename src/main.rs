@@ -63,7 +63,7 @@ async fn main() -> Result<()> {
     let monitoring_service = Arc::new(MonitoringService::new(cache_repo.clone()));
     let jwt_service = Arc::new(JwtService::new());
     let user_service = Arc::new(UserService::new(storage_repo.clone()));
-    let group_service = Arc::new(GroupService::new(storage_repo.clone()));
+    let group_service = Arc::new(GroupService::new(storage_repo.clone(), cache_repo.clone()));
 
     run_tasks(
         evm_rpc_service.clone(),
@@ -76,6 +76,7 @@ async fn main() -> Result<()> {
     crons::run_crons(
         evm_rpc_service.clone(),
         proxy_service.clone(),
+        group_service.clone(),
         config_repo.clone(),
     )
     .await?;

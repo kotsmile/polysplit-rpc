@@ -89,13 +89,6 @@ impl EvmRpcService {
         }
     }
 
-    pub async fn get_rpcs_by_chain_id(&self, chain_id: &str) -> anyhow::Result<Vec<Rpc>> {
-        self.storage_repo
-            .get_rpcs_by_chain_id(chain_id)
-            .await
-            .context("failed to to get rpcs for chain id")
-    }
-
     pub async fn get_rpcs_metrics_for_chain_id(
         &self,
         chain_id: &str,
@@ -217,25 +210,48 @@ impl EvmRpcService {
         self.chainlist_client.fetch_rpcs().await
     }
 
-    pub async fn set_rpcs_for_chain_id(&self, chain_id: &str, rpcs: Vec<(String, RpcMetrics)>) {
+    pub async fn get_rpcs_for_chain_id(&self, chain_id: &str) -> anyhow::Result<Vec<Rpc>> {
+        self.storage_repo
+            .get_rpcs_by_chain_id(chain_id)
+            .await
+            .context("failed to to get rpcs for chain id")
+    }
+
+    pub async fn set_rpcs_for_chain_id_cache(
+        &self,
+        chain_id: &str,
+        rpcs: Vec<(String, RpcMetrics)>,
+    ) {
         self.cache_repo
             .write()
             .await
             .set_rpcs_for_chain_id(chain_id, rpcs)
     }
 
-    pub async fn get_rpcs_for_chain_id(&self, chain_id: &str) -> Option<Vec<(String, RpcMetrics)>> {
+    pub async fn get_rpcs_for_chain_id_cache(
+        &self,
+        chain_id: &str,
+    ) -> Option<Vec<(String, RpcMetrics)>> {
         self.cache_repo.read().await.get_rpcs_for_chain_id(chain_id)
     }
 
-    pub async fn get_rpcs_for_api_key(&self, api_key: &str, chain_id: &str) -> Option<Vec<String>> {
+    pub async fn get_rpcs_for_api_key_cache(
+        &self,
+        api_key: &str,
+        chain_id: &str,
+    ) -> Option<Vec<String>> {
         self.cache_repo
             .read()
             .await
             .get_rpcs_for_api_key(api_key, chain_id)
     }
 
-    pub async fn set_rpcs_for_api_key(&self, api_key: &str, chain_id: &str, rpcs: Vec<String>) {
+    pub async fn set_rpcs_for_api_key_cache(
+        &self,
+        api_key: &str,
+        chain_id: &str,
+        rpcs: Vec<String>,
+    ) {
         self.cache_repo
             .write()
             .await

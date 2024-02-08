@@ -9,6 +9,7 @@ use crate::{
     repo::config::ConfigRepo,
     services::{
         evm_rpc::{EvmRpcService, RpcMetrics},
+        group::GroupService,
         proxy::ProxyService,
     },
 };
@@ -18,6 +19,7 @@ const BATCH_SIZE: usize = 100;
 pub async fn run_crons(
     evm_rpc_service: Arc<EvmRpcService>,
     proxy_service: Arc<RwLock<ProxyService>>,
+    group_service: Arc<GroupService>,
     config_repo: ConfigRepo,
 ) -> Result<()> {
     let sched = JobScheduler::new().await?;
@@ -30,6 +32,7 @@ pub async fn run_crons(
                 let proxy_service = proxy_service.clone();
                 let supported_chain_ids = config_repo.supported_chain_ids.clone();
                 let feed_max_timeout = config_repo.feed_max_timeout.clone();
+                let group_service = group_service.clone();
 
                 Box::pin(async move {
                     log::info!("start rpc feed cron");
@@ -38,6 +41,7 @@ pub async fn run_crons(
                         proxy_service,
                         supported_chain_ids,
                         feed_max_timeout,
+                        group_service,
                     )
                     .await;
                 })
@@ -76,10 +80,11 @@ pub async fn rpc_feed_cron(
     proxy_service: Arc<RwLock<ProxyService>>,
     supported_chain_ids: Vec<String>,
     feed_max_timeout: Duration,
+    group_service: Arc<GroupService>,
 ) {
     for chain_id in &supported_chain_ids {
         let rpcs = evm_rpc_service
-            .get_rpcs_by_chain_id(chain_id)
+            .get_rpcs_for_chain_id(chain_id)
             .await
             .context("failed to get rpcs for chain_id");
         let Ok(rpcs) = rpcs else {
@@ -140,6 +145,44 @@ pub async fn rpc_feed_cron(
             })
             .collect();
 
-        evm_rpc_service.set_rpcs_for_chain_id(chain_id, rpcs).await;
+        evm_rpc_service
+            .set_rpcs_for_chain_id_cache(chain_id, rpcs)
+            .await;
+    }
+
+    // update api key to rpcs
+    let Ok(groups) = group_service
+        .get_groups()
+        .await
+        .context("failed to groups")
+        .map_err(|err| log::error!("{err}"))
+    else {
+        log::error!("failed to get groups");
+        return;
+    };
+
+    for group in &groups {
+        let Ok(rpcs) = group_service
+            .get_group_rpcs(&group.id)
+            .await
+            .map_err(|err| log::error!("{err}"))
+        else {
+            log::error!("failed to get rpcs for group");
+            continue;
+        };
+
+        let mut chain_id_to_rpcs: HashMap<String, Vec<String>> = HashMap::new();
+        for rpc in &rpcs {
+            chain_id_to_rpcs
+                .entry(rpc.chain_id.clone())
+                .or_insert(Vec::new())
+                .push(rpc.url.clone());
+        }
+
+        for (chain_id, rpcs) in chain_id_to_rpcs {
+            evm_rpc_service
+                .set_rpcs_for_api_key_cache(&group.api_key, &chain_id, rpcs)
+                .await;
+        }
     }
 }

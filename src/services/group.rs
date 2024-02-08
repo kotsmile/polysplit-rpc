@@ -1,20 +1,25 @@
 use std::sync::Arc;
 
 use anyhow::{anyhow, bail, Context, Result};
+use rocket::tokio::sync::RwLock;
 use uuid::Uuid;
 
 use crate::{
     models::{Group, NewRpc, Rpc},
-    repo::storage::StorageRepo,
+    repo::{cache::CacheRepo, storage::StorageRepo},
 };
 
 pub struct GroupService {
     storage_repo: Arc<StorageRepo>,
+    cache_repo: Arc<RwLock<CacheRepo>>,
 }
 
 impl GroupService {
-    pub fn new(storage_repo: Arc<StorageRepo>) -> Self {
-        Self { storage_repo }
+    pub fn new(storage_repo: Arc<StorageRepo>, cache_repo: Arc<RwLock<CacheRepo>>) -> Self {
+        Self {
+            storage_repo,
+            cache_repo,
+        }
     }
 
     pub async fn create_group(&self, user_id: &Uuid, name: &str) -> Result<Option<Group>> {
@@ -47,11 +52,31 @@ impl GroupService {
     }
 
     pub async fn update_api_key(&self, group_id: &Uuid) -> Result<String> {
-        self.get_group_by_id(group_id)
+        let group = self
+            .get_group_by_id(group_id)
+            .await
+            .context("failed to find group by id")?;
+        let Some(group) = group else {
+            bail!("no group with given id")
+        };
+
+        let api_key = self
+            .get_group_by_id(group_id)
             .await
             .context("failed to group")
             .and_then(|v| v.ok_or(anyhow!("no group with given group id")))
-            .map(|v| v.api_key)
+            .map(|v| v.api_key);
+
+        match api_key {
+            Err(err) => Err(err),
+            Ok(api_key) => {
+                self.cache_repo
+                    .write()
+                    .await
+                    .update_api_key(&group.api_key, &api_key);
+                Ok(api_key)
+            }
+        }
     }
 
     pub async fn get_groups_for_user(&self, user_id: &Uuid) -> Result<Vec<Group>> {
@@ -89,6 +114,7 @@ impl GroupService {
             .await
             .context("failed to request rpc")?;
 
+        // self.cache_repo.write().await.get_rpcs_for_api_key_mut
         match rpc {
             Some(rpc) => self
                 .storage_repo

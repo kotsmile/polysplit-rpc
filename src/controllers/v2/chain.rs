@@ -38,7 +38,7 @@ pub async fn post_chain_v2(
     }
 
     let Some(rpcs) = evm_rpc_service
-        .get_rpcs_for_api_key(api_key, chain_id)
+        .get_rpcs_for_api_key_cache(api_key, chain_id)
         .await
     else {
         monitoring_service.inc_error_income_requests().await;

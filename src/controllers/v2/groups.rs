@@ -138,25 +138,6 @@ pub async fn update_group_api_key(
         })?;
 
     Ok(ResponseData::build(UpdateApiKeyResponse { api_key }))
-
-    //
-    // group_service
-    //     .create_group(&user.id, &new_group.name)
-    //     .await
-    //     .context("failed to create group for user")
-    //     .map_err(|err| ResponseError {
-    //         error: format!("Failed to create new group"),
-    //         status: Status::InternalServerError,
-    //         internal_error: Err(err),
-    //     })
-    //     .and_then(|val| {
-    //         val.ok_or(ResponseError {
-    //             error: format!("Failed to create new group"),
-    //             status: Status::InternalServerError,
-    //             internal_error: Err(anyhow!("failed to find created group")),
-    //         })
-    //     })
-    //     .map(ResponseData::build)
 }
 
 #[openapi(tag = "Groups")]

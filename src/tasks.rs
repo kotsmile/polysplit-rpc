@@ -36,12 +36,14 @@ pub async fn run_tasks(
         let proxy_service = proxy_service.clone();
         let supported_chain_ids = config_repo.supported_chain_ids.clone();
         let feed_max_timeout = config_repo.feed_max_timeout.clone();
+        let group_service = group_service.clone();
         task::spawn(async move {
             rpc_feed_cron(
                 evm_rpc_service,
                 proxy_service,
                 supported_chain_ids,
                 feed_max_timeout,
+                group_service,
             )
             .await;
         });
@@ -72,7 +74,7 @@ pub async fn run_tasks(
         }
 
         evm_rpc_service
-            .set_rpcs_for_chain_id(chain_id, rpcs_for_chain_id)
+            .set_rpcs_for_chain_id_cache(chain_id, rpcs_for_chain_id)
             .await;
     }
 
@@ -106,7 +108,7 @@ pub async fn run_tasks(
 
         for (chain_id, rpcs) in chain_id_to_rpcs {
             evm_rpc_service
-                .set_rpcs_for_api_key(&group.api_key, &chain_id, rpcs)
+                .set_rpcs_for_api_key_cache(&group.api_key, &chain_id, rpcs)
                 .await;
         }
     }
