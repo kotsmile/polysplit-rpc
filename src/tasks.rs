@@ -52,6 +52,7 @@ pub async fn run_tasks(
         return;
     };
 
+    // zero initialize states
     for chain_id in &config_repo.supported_chain_ids {
         let Some(rpcs) = chain_to_rpc.get(chain_id) else {
             continue;

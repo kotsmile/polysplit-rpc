@@ -24,16 +24,6 @@ pub fn setup_app(
     user_service: Arc<UserService>,
     group_service: Arc<GroupService>,
 ) -> Rocket<Build> {
-    let cors = CorsOptions::default()
-        .allowed_origins(AllowedOrigins::all())
-        .allowed_methods(
-            vec![Method::Get, Method::Post, Method::Patch]
-                .into_iter()
-                .map(From::from)
-                .collect(),
-        )
-        .allow_credentials(true);
-
     std::env::set_var("ROCKET_PORT", config_repo.port.to_string());
     std::env::set_var("ROCKET_OAUTH", config_repo.rocket_oauth.to_string());
 
@@ -98,6 +88,18 @@ pub fn setup_app(
                 }),
             ),
         )
-        .attach(cors.to_cors().unwrap())
+        .attach(
+            CorsOptions::default()
+                .allowed_origins(AllowedOrigins::all())
+                .allowed_methods(
+                    vec![Method::Get, Method::Post, Method::Patch]
+                        .into_iter()
+                        .map(From::from)
+                        .collect(),
+                )
+                .allow_credentials(true)
+                .to_cors()
+                .unwrap(),
+        )
         .attach(OAuth2::<v2::oauth2::GoogleUserInfo>::fairing("google"))
 }

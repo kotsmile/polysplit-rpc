@@ -12,7 +12,9 @@ use thiserror::Error;
 
 use crate::client::chainlist::ChainlistClient;
 use crate::models::proxy::ProxyConfig;
+use crate::models::Rpc;
 use crate::repo::cache::CacheRepo;
+use crate::repo::storage::StorageRepo;
 
 #[derive(Debug, Error)]
 pub enum EvmRpcError {
@@ -51,13 +53,19 @@ impl RpcMetrics {
 pub struct EvmRpcService {
     cache_repo: Arc<RwLock<CacheRepo>>,
     chainlist_client: Box<ChainlistClient>,
+    storage_repo: Arc<StorageRepo>,
 }
 
 impl EvmRpcService {
-    pub fn new(cache_repo: Arc<RwLock<CacheRepo>>, chainlist_client: Box<ChainlistClient>) -> Self {
+    pub fn new(
+        cache_repo: Arc<RwLock<CacheRepo>>,
+        chainlist_client: Box<ChainlistClient>,
+        storage_repo: Arc<StorageRepo>,
+    ) -> Self {
         Self {
             cache_repo,
             chainlist_client,
+            storage_repo,
         }
     }
 
@@ -81,6 +89,24 @@ impl EvmRpcService {
         }
     }
 
+    pub async fn get_rpcs_by_chain_id(&self, chain_id: &str) -> anyhow::Result<Vec<Rpc>> {
+        self.storage_repo
+            .get_rpcs_by_chain_id(chain_id)
+            .await
+            .context("failed to to get rpcs for chain id")
+    }
+
+    pub async fn get_rpcs_metrics_for_chain_id(
+        &self,
+        chain_id: &str,
+    ) -> anyhow::Result<Vec<(String, RpcMetrics)>> {
+        self.cache_repo
+            .read()
+            .await
+            .get_rpcs_for_chain_id(chain_id)
+            .ok_or(anyhow!("failed to find rpcs metrics for chain_id"))
+    }
+
     pub async fn rpc_request(
         &self,
         rpc: &str,
@@ -98,27 +124,27 @@ impl EvmRpcService {
         match response {
             Ok(response) => {
                 if response.status().is_success() {
-                    return response
+                    response
                         .json::<Value>()
                         .await
                         .context("failed to parse response")
-                        .map_err(EvmRpcError::Internal);
+                        .map_err(EvmRpcError::Internal)
                 } else if response.status().is_client_error() {
-                    return Err(EvmRpcError::Client);
+                    Err(EvmRpcError::Client)
                 } else if response.status().is_server_error() {
-                    return Err(EvmRpcError::Server);
+                    Err(EvmRpcError::Server)
                 } else {
-                    return Err(EvmRpcError::Internal(anyhow!(
+                    Err(EvmRpcError::Internal(anyhow!(
                         "unknown error: {}",
                         response.status()
-                    )));
+                    )))
                 }
             }
             Err(err) => {
                 if err.is_timeout() {
-                    return Err(EvmRpcError::Timeout);
+                    Err(EvmRpcError::Timeout)
                 } else {
-                    return Err(EvmRpcError::Internal(anyhow!("unknown error: {err}")));
+                    Err(EvmRpcError::Internal(anyhow!("unknown error: {err}")))
                 }
             }
         }

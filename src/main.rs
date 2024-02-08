@@ -58,6 +58,7 @@ async fn main() -> Result<()> {
     let evm_rpc_service = Arc::new(EvmRpcService::new(
         cache_repo.clone(),
         chainlist_client.clone(),
+        storage_repo.clone(),
     ));
     let monitoring_service = Arc::new(MonitoringService::new(cache_repo.clone()));
     let jwt_service = Arc::new(JwtService::new());

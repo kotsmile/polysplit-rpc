@@ -1,6 +1,6 @@
 use std::{cmp::Ordering, collections::HashMap, sync::Arc, time::Duration};
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 use futures::stream::{FuturesUnordered, StreamExt};
 use rocket::tokio::sync::RwLock;
 use tokio_cron_scheduler::{Job, JobScheduler};
@@ -13,7 +13,7 @@ use crate::{
     },
 };
 
-const BATCH_SIZE: usize = 20;
+const BATCH_SIZE: usize = 100;
 
 pub async fn run_crons(
     evm_rpc_service: Arc<EvmRpcService>,
@@ -77,17 +77,13 @@ pub async fn rpc_feed_cron(
     supported_chain_ids: Vec<String>,
     feed_max_timeout: Duration,
 ) {
-    let chain_to_rpc = evm_rpc_service
-        .fetch_rpcs()
-        .await
-        .map_err(|err| log::error!("failed to fetch rpcs from chainlist: {err}"));
-    let Ok(chain_to_rpc) = chain_to_rpc else {
-        return;
-    };
-
     for chain_id in &supported_chain_ids {
-        let Some(rpcs) = chain_to_rpc.get(chain_id) else {
-            log::warn!("no rpc was found for {chain_id}");
+        let rpcs = evm_rpc_service
+            .get_rpcs_by_chain_id(chain_id)
+            .await
+            .context("failed to get rpcs for chain_id");
+        let Ok(rpcs) = rpcs else {
+            log::error!("failed to find rpcs for chain id");
             continue;
         };
 
@@ -106,7 +102,7 @@ pub async fn rpc_feed_cron(
                     let metric = evm_rpc_service_clone
                         .rpc_health_check(
                             chain_id,
-                            rpc,
+                            &rpc.url,
                             proxy_config,
                             feed_max_timeout,
                             // TODO(@kotsmile): remove hard code
@@ -118,7 +114,7 @@ pub async fn rpc_feed_cron(
             }
 
             while let Some((rpc, metric)) = futures.next().await {
-                rpc_to_metric.insert(rpc, metric);
+                rpc_to_metric.insert(rpc.url, metric);
             }
         }
 
