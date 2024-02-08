@@ -1,6 +1,8 @@
 import { JsonRpcProvider } from "ethers";
 const host = "http://127.0.0.1:3001";
 const testHost = "https://bsc.meowrpc.com";
+const apiKey = "72320785-f772-47e3-a9e3-569a26f75c1f"
+const url = `http://localhost:3001/v2/chain/56/${apiKey}`
 
 const testProvider = new JsonRpcProvider(testHost, undefined, {
   cacheTimeout: -1,
@@ -8,7 +10,7 @@ const testProvider = new JsonRpcProvider(testHost, undefined, {
 async function main() {
   for (const chainId of (Bun.env.SUPPORTED_CHAIN_IDS as string).split(",")) {
     const provider = new JsonRpcProvider(
-      `${host}/v1/chain/${chainId}`,
+      url,
       undefined,
       {
         cacheTimeout: -1,

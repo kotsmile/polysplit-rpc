@@ -34,7 +34,7 @@ impl GroupService {
             .context("failed to create new group")
     }
 
-    // TODO remake on sql
+    // TODO: remake on sql
     pub async fn get_group_with_owner(&self, user_id: &Uuid, group_id: &Uuid) -> Result<Group> {
         let group = self
             .get_group_by_id(&group_id)
@@ -60,23 +60,17 @@ impl GroupService {
             bail!("no group with given id")
         };
 
-        let api_key = self
-            .get_group_by_id(group_id)
+        let api_key = Uuid::new_v4().to_string();
+        self.storage_repo
+            .update_api_key(group_id, &api_key)
             .await
-            .context("failed to group")
-            .and_then(|v| v.ok_or(anyhow!("no group with given group id")))
-            .map(|v| v.api_key);
+            .context("failed to update api key")?;
 
-        match api_key {
-            Err(err) => Err(err),
-            Ok(api_key) => {
-                self.cache_repo
-                    .write()
-                    .await
-                    .update_api_key(&group.api_key, &api_key);
-                Ok(api_key)
-            }
-        }
+        self.cache_repo
+            .write()
+            .await
+            .update_api_key(&group.api_key, &api_key);
+        Ok(api_key)
     }
 
     pub async fn get_groups_for_user(&self, user_id: &Uuid) -> Result<Vec<Group>> {
@@ -108,14 +102,12 @@ impl GroupService {
     }
 
     pub async fn add_rpc_to_group(&self, group_id: &Uuid, new_rpc: &NewRpc) -> Result<Rpc> {
-        let rpc = self
+        match self
             .storage_repo
             .get_rpc_by_url(&new_rpc.url)
             .await
-            .context("failed to request rpc")?;
-
-        // self.cache_repo.write().await.get_rpcs_for_api_key_mut
-        match rpc {
+            .context("failed to request rpc")?
+        {
             Some(rpc) => self
                 .storage_repo
                 .add_group_rpc(group_id, &rpc.id)

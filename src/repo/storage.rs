@@ -43,31 +43,31 @@ impl StorageRepo {
             .context("failed to select user with email")
     }
 
-    pub async fn get_chains(&self) -> Result<Vec<Chain>> {
-        sqlx::query_as!(Chain, "select * from chains;")
-            .fetch_all(&self.pool)
-            .await
-            .context("failed to select chains in table")
-    }
-
-    pub async fn create_chain(&self, new_chain: &Chain) -> Result<Option<Chain>> {
-        sqlx::query_as!(
-            Chain,
-            "insert into chains (id, name) values ($1, $2) returning *;",
-            new_chain.id,
-            new_chain.name
-        )
-        .fetch_optional(&self.pool)
-        .await
-        .context("failed to insert row in chains table")
-    }
-
-    pub async fn get_rpcs(&self) -> Result<Vec<Rpc>> {
-        sqlx::query_as!(Rpc, "select * from rpcs;")
-            .fetch_all(&self.pool)
-            .await
-            .context("failed to select from rpcs")
-    }
+    // pub async fn get_chains(&self) -> Result<Vec<Chain>> {
+    //     sqlx::query_as!(Chain, "select * from chains;")
+    //         .fetch_all(&self.pool)
+    //         .await
+    //         .context("failed to select chains in table")
+    // }
+    //
+    // pub async fn create_chain(&self, new_chain: &Chain) -> Result<Option<Chain>> {
+    //     sqlx::query_as!(
+    //         Chain,
+    //         "insert into chains (id, name) values ($1, $2) returning *;",
+    //         new_chain.id,
+    //         new_chain.name
+    //     )
+    //     .fetch_optional(&self.pool)
+    //     .await
+    //     .context("failed to insert row in chains table")
+    // }
+    //
+    // pub async fn get_rpcs(&self) -> Result<Vec<Rpc>> {
+    //     sqlx::query_as!(Rpc, "select * from rpcs;")
+    //         .fetch_all(&self.pool)
+    //         .await
+    //         .context("failed to select from rpcs")
+    // }
 
     pub async fn get_rpcs_by_chain_id(&self, chain_id: &str) -> Result<Vec<Rpc>> {
         sqlx::query_as!(Rpc, "select * from rpcs where chain_id = $1;", chain_id)
@@ -76,16 +76,28 @@ impl StorageRepo {
             .context("failed to select from rpcs")
     }
 
-    pub async fn create_rpc(&self, new_rpc: &NewRpc) -> Result<Option<Rpc>> {
-        sqlx::query_as!(
-            Rpc,
-            "insert into rpcs (chain_id, url) values ($1, $2) returning *;",
-            new_rpc.chain_id,
-            new_rpc.url
+    // pub async fn create_rpc(&self, new_rpc: &NewRpc) -> Result<Option<Rpc>> {
+    //     sqlx::query_as!(
+    //         Rpc,
+    //         "insert into rpcs (chain_id, url) values ($1, $2) returning *;",
+    //         new_rpc.chain_id,
+    //         new_rpc.url
+    //     )
+    //     .fetch_optional(&self.pool)
+    //     .await
+    //     .context("failed to insert row in rpcs table")
+    // }
+
+    pub async fn update_api_key(&self, group_id: &Uuid, api_key: &str) -> Result<()> {
+        sqlx::query!(
+            "update groups set api_key = $1 where id = $2",
+            api_key,
+            group_id
         )
-        .fetch_optional(&self.pool)
+        .execute(&self.pool)
         .await
-        .context("failed to insert row in rpcs table")
+        .context("failed to update api_key of group")
+        .map(|_| {})
     }
 
     pub async fn get_groups(&self) -> Result<Vec<Group>> {

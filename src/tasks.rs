@@ -88,6 +88,7 @@ pub async fn run_tasks(
         return;
     };
 
+    // TODO: add checking for enable
     for group in &groups {
         let Ok(rpcs) = group_service
             .get_group_rpcs(&group.id)

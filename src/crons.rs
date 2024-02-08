@@ -161,6 +161,7 @@ pub async fn rpc_feed_cron(
         return;
     };
 
+    // TODO: add checking for enable
     for group in &groups {
         let Ok(rpcs) = group_service
             .get_group_rpcs(&group.id)

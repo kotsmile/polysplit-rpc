@@ -241,6 +241,9 @@ impl EvmRpcService {
         chain_id: &str,
         rpcs: Vec<String>,
     ) {
+        if api_key == "" {
+            return;
+        }
         self.cache_repo
             .write()
             .await

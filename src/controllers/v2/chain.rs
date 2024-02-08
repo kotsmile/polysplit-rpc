@@ -6,30 +6,28 @@ use serde_json::Value;
 
 use crate::{
     repo::config::ConfigRepo,
-    services::{evm_rpc::EvmRpcService, monitoring::MonitoringService, proxy::ProxyService},
+    services::{evm_rpc::EvmRpcService, proxy::ProxyService},
     util::controllers::{ResponseError, ResponseResult},
 };
 
-#[post("/v2/<api_key>/chain/<chain_id>", format = "json", data = "<rpc_call>")]
+#[post("/v2/chain/<chain_id>/<api_key>", format = "json", data = "<rpc_call>")]
 pub async fn post_chain_v2(
     chain_id: &str,
     api_key: &str,
     rpc_call: Json<Value>,
     evm_rpc_service: &State<Arc<EvmRpcService>>,
     proxy_service: &State<Arc<RwLock<ProxyService>>>,
-    monitoring_service: &State<Arc<MonitoringService>>,
     config_repo: &State<ConfigRepo>,
-    // _limitguard: RocketGovernor<'_, RateLimitGuard>,
 ) -> ResponseResult<Value> {
     // TODO add monitoring
-    monitoring_service.inc_income_requests().await;
+    // monitoring_service.inc_income_requests().await;
 
     if let None = config_repo
         .supported_chain_ids
         .iter()
         .position(|val| val == chain_id)
     {
-        monitoring_service.inc_error_income_requests().await;
+        // monitoring_service.inc_error_income_requests().await;
         return Err(ResponseError {
             status: Status::BadRequest,
             error: format!("chainId {chain_id} is not supported yet"),
@@ -41,7 +39,7 @@ pub async fn post_chain_v2(
         .get_rpcs_for_api_key_cache(api_key, chain_id)
         .await
     else {
-        monitoring_service.inc_error_income_requests().await;
+        // monitoring_service.inc_error_income_requests().await;
         return Err(ResponseError {
             status: Status::InternalServerError,
             error: format!("No rpc provided for chainId {chain_id}"),
@@ -66,7 +64,7 @@ pub async fn post_chain_v2(
             match response {
                 Ok(val) => {
                     log::info!("picked rpc: {}", rpc);
-                    monitoring_service.inc_success_income_requests().await;
+                    // monitoring_service.inc_success_income_requests().await;
                     return Ok(Json(val));
                 }
                 _ => {}
@@ -74,7 +72,7 @@ pub async fn post_chain_v2(
         }
     }
 
-    monitoring_service.inc_error_income_requests().await;
+    // monitoring_service.inc_error_income_requests().await;
     Err(ResponseError {
         status: Status::InternalServerError,
         error: format!("failed to request all RPCs for chainId: {chain_id}"),
