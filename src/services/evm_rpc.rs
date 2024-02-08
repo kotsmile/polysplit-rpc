@@ -89,17 +89,6 @@ impl EvmRpcService {
         }
     }
 
-    pub async fn get_rpcs_metrics_for_chain_id(
-        &self,
-        chain_id: &str,
-    ) -> anyhow::Result<Vec<(String, RpcMetrics)>> {
-        self.cache_repo
-            .read()
-            .await
-            .get_rpcs_for_chain_id(chain_id)
-            .ok_or(anyhow!("failed to find rpcs metrics for chain_id"))
-    }
-
     pub async fn rpc_request(
         &self,
         rpc: &str,
