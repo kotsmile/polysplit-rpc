@@ -124,7 +124,7 @@ impl EvmRpcService {
                 ))?;
         }
 
-        todo!()
+        Ok(())
     }
 
     pub async fn get_chains(&self) -> anyhow::Result<Vec<ChainConfig>> {

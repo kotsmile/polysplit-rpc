@@ -119,6 +119,6 @@ pub async fn run_tasks(
         .await
         .context("failed to update public rpcs")
     {
-        log::error!("{err}")
+        log::warn!("{err}")
     };
 }
