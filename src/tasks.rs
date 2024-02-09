@@ -113,4 +113,12 @@ pub async fn run_tasks(
                 .await;
         }
     }
+
+    if let Err(err) = evm_rpc_service
+        .update_public_rpcs()
+        .await
+        .context("failed to update public rpcs")
+    {
+        log::error!("{err}")
+    };
 }

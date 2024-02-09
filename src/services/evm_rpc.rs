@@ -12,7 +12,7 @@ use thiserror::Error;
 
 use crate::client::chainlist::{ChainConfig, ChainlistClient};
 use crate::models::proxy::ProxyConfig;
-use crate::models::Rpc;
+use crate::models::{NewRpc, Rpc, RpcVisibility};
 use crate::repo::cache::CacheRepo;
 use crate::repo::storage::StorageRepo;
 
@@ -86,6 +86,47 @@ impl EvmRpcService {
                 .map_err(EvmRpcError::Internal),
         }
     }
+
+    pub async fn update_public_rpcs(&self) -> anyhow::Result<()> {
+        let chain_id_to_rpcs = self
+            .chainlist_client
+            .fetch_rpcs()
+            .await
+            .context("failed to fetch rpcs from chainlist client")?;
+
+        let chains = self
+            .storage_repo
+            .get_chains()
+            .await
+            .context("failed to get chains from storage repo")?;
+
+        for chain in &chains {
+            let Some(rpcs) = chain_id_to_rpcs.get(&chain.id) else {
+                log::warn!("no rpcs was found for {chain_id}", chain_id = chain.id);
+                continue;
+            };
+
+            self.storage_repo
+                .create_rpcs(
+                    &rpcs
+                        .iter()
+                        .map(|val| NewRpc {
+                            visibility: RpcVisibility::Public,
+                            chain_id: chain.id.clone(),
+                            url: val.to_string(),
+                        })
+                        .collect(),
+                )
+                .await
+                .context(format!(
+                    "failed to create rpcs for {chain_id}",
+                    chain_id = chain.id
+                ))?;
+        }
+
+        todo!()
+    }
+
     pub async fn get_chains(&self) -> anyhow::Result<Vec<ChainConfig>> {
         self.chainlist_client
             .fetch_chains()
