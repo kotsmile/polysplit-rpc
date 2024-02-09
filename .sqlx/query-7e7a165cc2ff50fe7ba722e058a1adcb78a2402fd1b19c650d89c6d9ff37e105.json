@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "insert into chains (id, name) values ($1, $2) on conflict (id) do nothing;;",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Varchar",
+        "Varchar"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "7e7a165cc2ff50fe7ba722e058a1adcb78a2402fd1b19c650d89c6d9ff37e105"
+}
