@@ -2,7 +2,7 @@ use anyhow::{bail, Context, Result};
 use sqlx::{postgres::PgPoolOptions, Pool, Postgres};
 use uuid::Uuid;
 
-use crate::models::{Chain, Group, NewRpc, Rpc, User};
+use crate::models::{Chain, Group, NewRpc, Rpc, RpcVisibility, User};
 
 pub struct StorageRepo {
     pool: Pool<Postgres>,
@@ -70,10 +70,40 @@ impl StorageRepo {
     // }
 
     pub async fn get_rpcs_by_chain_id(&self, chain_id: &str) -> Result<Vec<Rpc>> {
-        sqlx::query_as!(Rpc, "select * from rpcs where chain_id = $1;", chain_id)
-            .fetch_all(&self.pool)
-            .await
-            .context("failed to select from rpcs")
+        sqlx::query_as!(
+            Rpc,
+            r#"
+                select 
+                    id, 
+                    chain_id, 
+                    url,
+                    visibility as "visibility: RpcVisibility" 
+                from rpcs where chain_id = $1;
+            "#,
+            chain_id
+        )
+        .fetch_all(&self.pool)
+        .await
+        .context("failed to select from rpcs")
+    }
+
+    pub async fn get_public_rpcs_by_chain_id(&self, chain_id: &str) -> Result<Vec<Rpc>> {
+        sqlx::query_as!(
+            Rpc,
+            r#"
+                select 
+                    id, 
+                    chain_id, 
+                    url,
+                    visibility as "visibility: RpcVisibility" 
+                from rpcs 
+                where chain_id = $1 and visibility = 'public';
+            "#,
+            chain_id
+        )
+        .fetch_all(&self.pool)
+        .await
+        .context("failed to select from rpcs")
     }
 
     // pub async fn create_rpc(&self, new_rpc: &NewRpc) -> Result<Option<Rpc>> {
@@ -139,7 +169,7 @@ impl StorageRepo {
         sqlx::query_as!(
             Rpc,
             r#"
-                select r.id, r.chain_id, r.url 
+                select r.id, r.chain_id, r.url, r.visibility as "visibility: RpcVisibility"
                 from rpcs r 
                 left join groups_rpcs 
                 on groups_rpcs.rpc_id = r.id 
@@ -153,7 +183,7 @@ impl StorageRepo {
     }
 
     pub async fn get_rpc_by_url(&self, url: &str) -> Result<Option<Rpc>> {
-        sqlx::query_as!(Rpc, "select * from rpcs where url = $1", url)
+        sqlx::query_as!(Rpc, r#"select id, chain_id, url, visibility as "visibility: RpcVisibility" from rpcs where url = $1"#, url)
             .fetch_optional(&self.pool)
             .await
             .context("failed to find rpc")
@@ -172,9 +202,14 @@ impl StorageRepo {
 
         let rpc = sqlx::query_as!(
             Rpc,
-            "insert into rpcs(chain_id, url) values ($1, $2) returning *;",
+            r#"
+                insert into rpcs(chain_id, url, visibility) 
+                values ($1, $2, $3) 
+                returning id, chain_id, url, visibility as "visibility: RpcVisibility";
+            "#,
             new_rpc.chain_id,
-            new_rpc.url
+            new_rpc.url,
+            &new_rpc.visibility as &RpcVisibility
         )
         .fetch_optional(&mut *tx)
         .await

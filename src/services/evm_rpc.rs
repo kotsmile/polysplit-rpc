@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use thiserror::Error;
 
-use crate::client::chainlist::ChainlistClient;
+use crate::client::chainlist::{ChainConfig, ChainlistClient};
 use crate::models::proxy::ProxyConfig;
 use crate::models::Rpc;
 use crate::repo::cache::CacheRepo;
@@ -31,12 +31,10 @@ pub enum EvmRpcError {
 }
 
 #[derive(Deserialize)]
-struct EvmRpcTestResponse {
-    #[serde(rename = "jsonrpc")]
-    _jsonrpc: String,
-    #[serde(rename = "id")]
-    _id: u32,
-    result: String,
+pub struct EvmRpcTestResponse {
+    pub ksonrpc: String,
+    pub id: u32,
+    pub result: String,
 }
 
 #[derive(Debug, Clone, Copy, Serialize, JsonSchema)]
@@ -87,6 +85,12 @@ impl EvmRpcService {
                 .context("failed to build http client")
                 .map_err(EvmRpcError::Internal),
         }
+    }
+    pub async fn get_chains(&self) -> anyhow::Result<Vec<ChainConfig>> {
+        self.chainlist_client
+            .fetch_chains()
+            .await
+            .context("failed to fetch chains from chainlist client")
     }
 
     pub async fn rpc_request(
@@ -193,6 +197,13 @@ impl EvmRpcService {
 
         let response_time_ms = total_time / (request_tries - failed) as u128;
         return Ok(RpcMetrics { response_time_ms });
+    }
+
+    pub async fn get_public_rpcs_for_chain_id(&self, chain_id: &str) -> anyhow::Result<Vec<Rpc>> {
+        self.storage_repo
+            .get_public_rpcs_by_chain_id(chain_id)
+            .await
+            .context("failed to get public rpcs for chain id from storage repo")
     }
 
     pub async fn fetch_rpcs(&self) -> anyhow::Result<HashMap<String, Vec<String>>> {

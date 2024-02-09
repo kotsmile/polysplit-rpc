@@ -18,11 +18,14 @@ create table chains (
     primary key (id)
 );
 
+create type rpc_visibility as enum ('public', 'private');
+
 create table rpcs (
     id serial,
 
     chain_id varchar not null,
     url varchar not null unique,
+    visibility rpc_visibility not null default 'public',
 
     primary key (id),
     constraint fk_chain foreign key(chain_id) references chains(id)

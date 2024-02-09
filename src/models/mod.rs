@@ -45,15 +45,24 @@ pub struct NewGroup {
     pub owner_id: Uuid,
 }
 
+#[derive(Debug, JsonSchema, Serialize, Deserialize, Clone, sqlx::Type, PartialEq, Eq)]
+#[sqlx(type_name = "rpc_visibility", rename_all = "lowercase")]
+pub enum RpcVisibility {
+    Public,
+    Private,
+}
+
 #[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
 pub struct Rpc {
     pub id: i32,
     pub chain_id: String,
     pub url: String,
+    pub visibility: RpcVisibility,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
 pub struct NewRpc {
     pub chain_id: String,
     pub url: String,
+    pub visibility: RpcVisibility,
 }

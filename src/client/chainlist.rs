@@ -2,11 +2,86 @@ use std::collections::HashMap;
 
 use anyhow::{anyhow, Context, Result};
 use regex_macro::regex;
+use schemars::JsonSchema;
+use serde::{Deserialize, Serialize};
 
 const RESOURCE_URL: &'static str =
     "https://raw.githubusercontent.com/DefiLlama/chainlist/main/constants/extraRpcs.js";
 const TARGET_START_LINE: &'static str = "export const extraRpcs = {";
 const TARGET_STOP_LINE: &'static str = "const allExtraRpcs = mergeDeep(llamaNodesRpcs, extraRpcs);";
+const CHAINS_URL: &'static str = "https://chainid.network/chains.json";
+
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct ChainConfig {
+    pub name: String,
+    pub chain: String,
+    pub icon: Option<String>,
+    pub rpc: Vec<String>,
+    #[serde(default)]
+    pub features: Vec<Feature>,
+    pub faucets: Vec<String>,
+    pub native_currency: NativeCurrency,
+    #[serde(rename = "infoURL")]
+    pub info_url: String,
+    pub short_name: String,
+    pub chain_id: i64,
+    pub network_id: i64,
+    pub slip44: Option<i64>,
+    pub ens: Option<Ens>,
+    #[serde(default)]
+    pub explorers: Vec<Explorer>,
+    pub title: Option<String>,
+    pub status: Option<String>,
+    #[serde(default)]
+    pub red_flags: Vec<String>,
+    pub parent: Option<Parent>,
+}
+
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct Feature {
+    pub name: String,
+}
+
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct NativeCurrency {
+    pub name: String,
+    pub symbol: String,
+    pub decimals: i64,
+}
+
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct Ens {
+    pub registry: String,
+}
+
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct Explorer {
+    pub name: String,
+    pub url: String,
+    pub standard: String,
+    pub icon: Option<String>,
+}
+
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct Parent {
+    #[serde(rename = "type")]
+    pub type_field: String,
+    pub chain: String,
+    #[serde(default)]
+    pub bridges: Vec<Bridge>,
+}
+
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct Bridge {
+    pub url: String,
+}
 
 #[derive(Clone, Copy)]
 pub struct ChainlistClient;
@@ -66,5 +141,14 @@ impl ChainlistClient {
         }
 
         Ok(chain_to_rpc)
+    }
+
+    pub async fn fetch_chains(&self) -> Result<Vec<ChainConfig>> {
+        reqwest::get(CHAINS_URL)
+            .await
+            .context("failed to make resposne to chains source")?
+            .json::<Vec<ChainConfig>>()
+            .await
+            .context("failed to parse response")
     }
 }

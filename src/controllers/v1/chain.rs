@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use anyhow::anyhow;
+use anyhow::{anyhow, Context};
 use rocket::{get, http::Status, post, serde::json::Json, tokio::sync::RwLock, State};
 use rocket_governor::RocketGovernor;
 use rocket_okapi::openapi;
@@ -9,6 +9,7 @@ use serde::Serialize;
 use serde_json::Value;
 
 use crate::{
+    client::chainlist::ChainConfig,
     middleware::RateLimitGuard,
     repo::config::ConfigRepo,
     services::{
@@ -16,8 +17,34 @@ use crate::{
         monitoring::MonitoringService,
         proxy::ProxyService,
     },
-    util::controllers::{ResponseError, ResponseResult},
+    util::controllers::{ResponseData, ResponseError, ResponseResult, ResponseResultData},
 };
+
+#[openapi(tag = "Chains")]
+#[get("/v1/chains")]
+pub async fn get_chains(
+    evm_rpc_service: &State<Arc<EvmRpcService>>,
+) -> ResponseResultData<Vec<ChainConfig>> {
+    evm_rpc_service
+        .get_chains()
+        .await
+        .context("failed to get chains from evm_rpc service")
+        .map_err(|err| ResponseError {
+            status: Status::InternalServerError,
+            error: format!("Failed to fetch chains"),
+            internal_error: Err(err),
+        })
+        .map(ResponseData::build)
+}
+
+#[openapi(tag = "Chains")]
+#[get("/v1/chain/<chain_id>/rpc")]
+pub async fn get_chain_rpc(
+    chain_id: &str,
+    emv_rpc_service: &State<Arc<EvmRpcService>>,
+) -> ResponseResultData<Vec<ChainConfig>> {
+    todo!()
+}
 
 #[post("/v1/chain/<chain_id>", format = "json", data = "<rpc_call>")]
 pub async fn post_chain_v1(

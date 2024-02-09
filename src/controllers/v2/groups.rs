@@ -9,7 +9,7 @@ use url::Url;
 use uuid::Uuid;
 
 use crate::{
-    models::{Group, NewRpc, Rpc},
+    models::{Group, NewRpc, Rpc, RpcVisibility},
     services::{group::GroupService, jwt::UserClaim},
     util::controllers::{RequestResult, ResponseData, ResponseError, ResponseResultData},
 };
@@ -93,6 +93,7 @@ pub async fn post_group_rpc(
             &NewRpc {
                 chain_id: new_rpc.chain_id,
                 url: new_rpc.url,
+                visibility: RpcVisibility::Private,
             },
         )
         .await
