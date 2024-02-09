@@ -2,7 +2,7 @@ use anyhow::{bail, Context, Result};
 use sqlx::{postgres::PgPoolOptions, Pool, Postgres};
 use uuid::Uuid;
 
-use crate::models::{Group, NewRpc, Rpc, RpcVisibility, User};
+use crate::models::{Chain, Group, NewRpc, Rpc, RpcVisibility, User};
 
 pub struct StorageRepo {
     pool: Pool<Postgres>,
@@ -43,12 +43,12 @@ impl StorageRepo {
             .context("failed to select user with email")
     }
 
-    // pub async fn get_chains(&self) -> Result<Vec<Chain>> {
-    //     sqlx::query_as!(Chain, "select * from chains;")
-    //         .fetch_all(&self.pool)
-    //         .await
-    //         .context("failed to select chains in table")
-    // }
+    pub async fn get_chains(&self) -> Result<Vec<Chain>> {
+        sqlx::query_as!(Chain, "select * from chains;")
+            .fetch_all(&self.pool)
+            .await
+            .context("failed to select chains in table")
+    }
     //
     // pub async fn create_chain(&self, new_chain: &Chain) -> Result<Option<Chain>> {
     //     sqlx::query_as!(

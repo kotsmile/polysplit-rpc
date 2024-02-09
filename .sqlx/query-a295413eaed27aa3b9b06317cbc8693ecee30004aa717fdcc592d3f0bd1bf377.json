@@ -1,0 +1,26 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "select * from chains;",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 1,
+        "name": "name",
+        "type_info": "Varchar"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "a295413eaed27aa3b9b06317cbc8693ecee30004aa717fdcc592d3f0bd1bf377"
+}
