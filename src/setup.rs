@@ -6,6 +6,7 @@ use rocket_governor::rocket_governor_catcher;
 use rocket_oauth2::OAuth2;
 use rocket_okapi::{openapi_get_routes, rapidoc::*, settings::UrlObject, swagger_ui::*};
 
+use crate::controllers::catchers::not_authenticated;
 use crate::controllers::oauth2;
 use crate::controllers::status;
 use crate::controllers::{v1, v2};
@@ -36,7 +37,7 @@ pub fn setup_app(
         .manage(user_service)
         .manage(group_service)
         // .manage(storage)
-        .register("/", catchers!(rocket_governor_catcher))
+        .register("/", catchers![rocket_governor_catcher, not_authenticated])
         .mount(
             "/",
             openapi_get_routes![
