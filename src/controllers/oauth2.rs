@@ -38,7 +38,7 @@ pub fn get_refresh_token(
             internal_error: Err(err),
         })?;
 
-    Ok(Redirect::to(config_repo.frontend_url.clone()))
+    Ok(Redirect::to(config_repo.frontend_url_profile.clone()))
 }
 
 #[get("/auth/login/google")]
@@ -132,5 +132,5 @@ pub async fn get_provider_google(
             internal_error: Err(err),
         })?;
 
-    Ok(Redirect::to(config_repo.frontend_url.clone()))
+    Ok(Redirect::to(config_repo.frontend_url_profile.clone()))
 }

@@ -8,7 +8,8 @@ pub struct ConfigRepo {
     pub proxyseller_api_key: String,
     pub supported_chain_ids: Vec<String>,
     pub feed_max_timeout: Duration,
-    pub frontend_url: String,
+    pub frontend_url_sign_up: String,
+    pub frontend_url_profile: String,
     pub database_url: String,
     pub rocket_oauth: String,
 }
@@ -32,7 +33,8 @@ impl ConfigRepo {
             .context("failed to parse feed max timeout")
             .map(|val| Duration::new(0, val * 1_000_000))?;
 
-        let frontend_url = get_env("FRONTEND_URL")?;
+        let frontend_url_sign_up = get_env("FRONTEND_URL_SIGN_UP")?;
+        let frontend_url_profile = get_env("FRONTEND_URL_PROFILE")?;
         let database_url = get_env("DATABASE_URL")?;
 
         // oauth
@@ -56,7 +58,8 @@ impl ConfigRepo {
             port,
             proxyseller_api_key,
             supported_chain_ids,
-            frontend_url,
+            frontend_url_sign_up,
+            frontend_url_profile,
             database_url,
             feed_max_timeout,
             rocket_oauth,
