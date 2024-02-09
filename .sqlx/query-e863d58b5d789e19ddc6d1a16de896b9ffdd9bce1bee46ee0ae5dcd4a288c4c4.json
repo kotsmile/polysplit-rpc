@@ -1,0 +1,50 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n                select r.id, r.chain_id, r.url, r.visibility as \"visibility: RpcVisibility\"\n                from rpcs r \n                left join groups_rpcs \n                on groups_rpcs.rpc_id = r.id \n                where groups_rpcs.group_id = $1\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 1,
+        "name": "chain_id",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "url",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 3,
+        "name": "visibility: RpcVisibility",
+        "type_info": {
+          "Custom": {
+            "name": "rpc_visibility",
+            "kind": {
+              "Enum": [
+                "public",
+                "private"
+              ]
+            }
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "e863d58b5d789e19ddc6d1a16de896b9ffdd9bce1bee46ee0ae5dcd4a288c4c4"
+}

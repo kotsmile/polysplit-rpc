@@ -1,0 +1,28 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "select * from users where email = $1;",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "email",
+        "type_info": "Varchar"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "1c28bcb2d45ec83c2a7fda330c8d6218c5a1d7ebb4cae91b351770e4b2119522"
+}

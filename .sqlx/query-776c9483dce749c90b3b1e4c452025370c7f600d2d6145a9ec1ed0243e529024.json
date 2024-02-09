@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "insert into groups_rpcs(group_id,rpc_id) values ($1, $2)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Int4"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "776c9483dce749c90b3b1e4c452025370c7f600d2d6145a9ec1ed0243e529024"
+}
