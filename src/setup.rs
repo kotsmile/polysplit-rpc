@@ -42,8 +42,9 @@ pub fn setup_app(
             openapi_get_routes![
                 status::get_health,
                 // v1
-                v1::chain::get_metrics_v1,
-                v1::monitoring::get_monitoring_v1,
+                v1::chain::get_chains,
+                v1::chain::get_metrics,
+                v1::monitoring::get_monitoring,
                 // v2
                 // public
                 v2::chain::get_chains,
@@ -64,9 +65,9 @@ pub fn setup_app(
                 oauth2::get_provider_google,
                 oauth2::get_login_google,
                 // v1
-                v1::chain::post_chain_v1,
+                v1::chain::post_chain,
                 // v2
-                v2::chain::post_chain_v2
+                v2::chain::post_chain
             ],
         )
         .mount(

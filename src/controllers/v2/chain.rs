@@ -50,7 +50,7 @@ pub async fn get_chain_rpc(
 
 #[openapi(tag = "Chains")]
 #[post("/v2/chain/<chain_id>/<api_key>", format = "json", data = "<rpc_call>")]
-pub async fn post_chain_v2(
+pub async fn post_chain(
     chain_id: &str,
     api_key: &str,
     rpc_call: Json<Value>,

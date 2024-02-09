@@ -20,7 +20,7 @@ pub struct MonitoringResponse {
 
 #[openapi(tag = "Monitoring")]
 #[get("/v1/monitoring")]
-pub async fn get_monitoring_v1(
+pub async fn get_monitoring(
     monitoring_service: &State<Arc<MonitoringService>>,
 ) -> ResponseResultData<MonitoringResponse> {
     let monitoring = monitoring_service.get_monitoring().await;

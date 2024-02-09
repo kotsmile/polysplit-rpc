@@ -16,11 +16,17 @@ use crate::{
         monitoring::MonitoringService,
         proxy::ProxyService,
     },
-    util::controllers::{ResponseError, ResponseResult},
+    util::controllers::{ResponseData, ResponseError, ResponseResult, ResponseResultData},
 };
 
+#[openapi("Chain")]
+#[get("/v1/chain")]
+pub async fn get_chains(config_repo: &State<ConfigRepo>) -> ResponseResultData<Vec<String>> {
+    Ok(ResponseData::build(config_repo.supported_chain_ids.clone()))
+}
+
 #[post("/v1/chain/<chain_id>", format = "json", data = "<rpc_call>")]
-pub async fn post_chain_v1(
+pub async fn post_chain(
     chain_id: &str,
     rpc_call: Json<Value>,
     evm_rpc_service: &State<Arc<EvmRpcService>>,
@@ -100,7 +106,7 @@ pub struct MetricsResponse {
 
 #[openapi(tag = "Metrics")]
 #[get("/v1/chain/<chain_id>/metrics")]
-pub async fn get_metrics_v1(
+pub async fn get_metrics(
     chain_id: &str,
     evm_rpc_service: &State<Arc<EvmRpcService>>,
     config_repo: &State<ConfigRepo>,
