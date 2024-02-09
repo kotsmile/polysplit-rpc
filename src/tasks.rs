@@ -115,10 +115,18 @@ pub async fn run_tasks(
     }
 
     if let Err(err) = evm_rpc_service
+        .init_chains(&config_repo.supported_chain_ids)
+        .await
+        .context("failed to init chains in evm_rpc service")
+    {
+        panic!("{err}");
+    }
+
+    if let Err(err) = evm_rpc_service
         .update_public_rpcs()
         .await
-        .context("failed to update public rpcs")
+        .context("failed to update public rpcs in evm_rpc service")
     {
-        log::warn!("{err}")
-    };
+        log::warn!("{err}");
+    }
 }

@@ -49,25 +49,32 @@ impl StorageRepo {
             .await
             .context("failed to select chains in table")
     }
-    //
-    // pub async fn create_chain(&self, new_chain: &Chain) -> Result<Option<Chain>> {
-    //     sqlx::query_as!(
-    //         Chain,
-    //         "insert into chains (id, name) values ($1, $2) returning *;",
-    //         new_chain.id,
-    //         new_chain.name
-    //     )
-    //     .fetch_optional(&self.pool)
-    //     .await
-    //     .context("failed to insert row in chains table")
-    // }
-    //
-    // pub async fn get_rpcs(&self) -> Result<Vec<Rpc>> {
-    //     sqlx::query_as!(Rpc, "select * from rpcs;")
-    //         .fetch_all(&self.pool)
-    //         .await
-    //         .context("failed to select from rpcs")
-    // }
+
+    pub async fn create_chains(&self, new_chains: &Vec<Chain>) -> Result<()> {
+        let mut tx = self
+            .pool
+            .begin()
+            .await
+            .context("failed to init transaction")?;
+
+        for chain in new_chains {
+            sqlx::query_as!(
+                Chain,
+                "insert into chains (id, name) values ($1, $2) on conflict (id) do nothing;;",
+                chain.id,
+                chain.name,
+            )
+            .execute(&mut *tx)
+            .await
+            .context("failed to insert row in chains table")?;
+        }
+
+        tx.commit()
+            .await
+            .context("failed to finalize transaction")?;
+
+        Ok(())
+    }
 
     pub async fn get_rpcs_by_chain_id(&self, chain_id: &str) -> Result<Vec<Rpc>> {
         sqlx::query_as!(
@@ -120,7 +127,7 @@ impl StorageRepo {
                 new_rpc.url,
                 &new_rpc.visibility as &RpcVisibility
             )
-            .fetch_optional(&mut *tx)
+            .execute(&mut *tx)
             .await
             .context("failed to insert row in rpcs table")?;
         }

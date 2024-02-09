@@ -4,6 +4,7 @@ use std::time::{Duration, Instant};
 
 use anyhow::{anyhow, bail, Context};
 use reqwest::Client;
+use rocket::form::validate::Contains;
 use rocket::tokio::sync::RwLock;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -12,7 +13,7 @@ use thiserror::Error;
 
 use crate::client::chainlist::{ChainConfig, ChainlistClient};
 use crate::models::proxy::ProxyConfig;
-use crate::models::{NewRpc, Rpc, RpcVisibility};
+use crate::models::{Chain, NewRpc, Rpc, RpcVisibility};
 use crate::repo::cache::CacheRepo;
 use crate::repo::storage::StorageRepo;
 
@@ -85,6 +86,32 @@ impl EvmRpcService {
                 .context("failed to build http client")
                 .map_err(EvmRpcError::Internal),
         }
+    }
+
+    pub async fn init_chains(&self, chain_ids: &Vec<String>) -> anyhow::Result<()> {
+        let chains_configs = self
+            .get_chains()
+            .await
+            .context("failed to get chains in evm_rpc service")?;
+
+        let mut chains: Vec<Chain> = Vec::new();
+        for chain in chains_configs {
+            if !chain_ids.contains(&chain.chain_id) {
+                continue;
+            }
+
+            chains.push(Chain {
+                id: chain.chain_id,
+                name: chain.name,
+            })
+        }
+
+        self.storage_repo
+            .create_chains(&chains)
+            .await
+            .context("failed to create chains in storage repo")?;
+
+        Ok(())
     }
 
     pub async fn update_public_rpcs(&self) -> anyhow::Result<()> {
