@@ -4,6 +4,8 @@ WORKDIR /app
 COPY ./Cargo.lock ./Cargo.lock
 COPY ./Cargo.toml ./Cargo.toml
 COPY ./src ./src
+COPY ./.sqlx ./.sqlx
+COPY ./migrations ./migrations
 ENV SQLX_OFFLINE=true
 RUN cargo build --release
 
