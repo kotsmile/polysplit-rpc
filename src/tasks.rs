@@ -20,6 +20,7 @@ pub async fn run_tasks(
     config_repo: ConfigRepo,
 ) {
     {
+        log::info!("start init proxies");
         let proxy_service = proxy_service.clone();
         task::spawn(async move {
             let _ = proxy_service
@@ -32,6 +33,7 @@ pub async fn run_tasks(
     }
 
     {
+        log::info!("start rpc feed cron");
         let evm_rpc_service = evm_rpc_service.clone();
         let proxy_service = proxy_service.clone();
         let supported_chain_ids = config_repo.supported_chain_ids.clone();
@@ -49,6 +51,7 @@ pub async fn run_tasks(
         });
     }
 
+    log::info!("fetching rpcs");
     let chain_to_rpc = evm_rpc_service
         .fetch_rpcs()
         .await
@@ -58,6 +61,7 @@ pub async fn run_tasks(
     };
 
     // zero initialize states
+    log::info!("initiating rpcs");
     for chain_id in &config_repo.supported_chain_ids {
         let Some(rpcs) = chain_to_rpc.get(chain_id) else {
             continue;
@@ -78,6 +82,7 @@ pub async fn run_tasks(
             .await;
     }
 
+    log::info!("initiating groups");
     let Ok(groups) = group_service
         .get_groups()
         .await
@@ -114,6 +119,7 @@ pub async fn run_tasks(
         }
     }
 
+    log::info!("initiating chains");
     if let Err(err) = evm_rpc_service
         .init_chains(&config_repo.supported_chain_ids)
         .await
@@ -122,6 +128,7 @@ pub async fn run_tasks(
         panic!("{err}");
     }
 
+    log::info!("updating public rpcs");
     if let Err(err) = evm_rpc_service
         .update_public_rpcs()
         .await
