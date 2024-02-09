@@ -31,7 +31,7 @@ impl GroupService {
                 api_key: Uuid::new_v4().to_string(),
             })
             .await
-            .context("failed to create new group")
+            .context("failed to create new group in storage repo")
     }
 
     // TODO: remake on sql
@@ -39,7 +39,7 @@ impl GroupService {
         let group = self
             .get_group_by_id(&group_id)
             .await
-            .context("failed to find group by id")?;
+            .context("failed to find group by id in storage repo")?;
         let Some(group) = group else {
             bail!("no group was found for: {group_id}")
         };
@@ -55,7 +55,7 @@ impl GroupService {
         let group = self
             .get_group_by_id(group_id)
             .await
-            .context("failed to find group by id")?;
+            .context("failed to find group by id in storage repo")?;
         let Some(group) = group else {
             bail!("no group with given id")
         };
@@ -64,7 +64,7 @@ impl GroupService {
         self.storage_repo
             .update_api_key(group_id, &api_key)
             .await
-            .context("failed to update api key")?;
+            .context("failed to update api key in storage repo")?;
 
         self.cache_repo
             .write()
@@ -77,28 +77,28 @@ impl GroupService {
         self.storage_repo
             .get_groups_for_user(user_id)
             .await
-            .context("failed to find groups for user")
+            .context("failed to find groups for user in storage repo")
     }
 
     pub async fn get_groups(&self) -> Result<Vec<Group>> {
         self.storage_repo
             .get_groups()
             .await
-            .context("failed to find groups")
+            .context("failed to find groups in storage repo")
     }
 
     pub async fn get_group_by_id(&self, group_id: &Uuid) -> Result<Option<Group>> {
         self.storage_repo
             .get_group_by_id(group_id)
             .await
-            .context("failed to find group by id")
+            .context("failed to find group by id in storage repo")
     }
 
     pub async fn get_group_rpcs(&self, group_id: &Uuid) -> Result<Vec<Rpc>> {
         self.storage_repo
             .get_group_rpcs(group_id)
             .await
-            .context("failed to request rpcs for group")
+            .context("failed to request rpcs for group in storage repo")
     }
 
     pub async fn add_rpc_to_group(&self, group_id: &Uuid, new_rpc: &NewRpc) -> Result<Rpc> {
@@ -106,19 +106,19 @@ impl GroupService {
             .storage_repo
             .get_rpc_by_url(&new_rpc.url)
             .await
-            .context("failed to request rpc")?
+            .context("failed to request rpc in storage repo")?
         {
             Some(rpc) => self
                 .storage_repo
                 .add_group_rpc(group_id, &rpc.id)
                 .await
-                .context("failed to add rpc to group")
+                .context("failed to add rpc to group in storage repo")
                 .map(|_| rpc),
             None => self
                 .storage_repo
                 .create_and_add_rpc_to_group(group_id, new_rpc)
                 .await
-                .context("failed to create rpc and add it to group"),
+                .context("failed to create rpc and add it to group in storage repo"),
         }
     }
 }

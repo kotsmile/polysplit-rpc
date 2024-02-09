@@ -24,13 +24,13 @@ impl UserService {
                 email: new_user.email.clone(),
             })
             .await
-            .context("failed to create new user")
+            .context("failed to create new user in storage repo")
     }
 
     pub async fn get_user_by_email(&self, email: &str) -> Result<Option<User>> {
         self.storage_repo
             .get_user_by_email(email)
             .await
-            .context("failed to find user by email")
+            .context("failed to find user by email in storage repo")
     }
 }

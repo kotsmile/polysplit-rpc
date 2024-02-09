@@ -214,7 +214,7 @@ impl EvmRpcService {
         self.storage_repo
             .get_rpcs_by_chain_id(chain_id)
             .await
-            .context("failed to to get rpcs for chain id")
+            .context("failed to to get rpcs for chain id from storage repo")
     }
 
     pub async fn set_rpcs_for_chain_id_cache(

@@ -55,7 +55,7 @@ impl ProxyService {
                 .proxy_client
                 .check_proxy(&proxy_config)
                 .await
-                .context("failed to check proxy")?;
+                .context("failed to check proxy in proxy client")?;
 
             if response {
                 break;
@@ -70,7 +70,7 @@ impl ProxyService {
             .proxy_client
             .fetch_proxies()
             .await
-            .context("failed to fetch proxies")?;
+            .context("failed to fetch proxies from proxy client")?;
 
         self.proxy_id = 0;
         self.state = ProxyServiceState::Initiated;
