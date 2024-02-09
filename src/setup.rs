@@ -60,7 +60,8 @@ pub fn setup_app(
         .mount(
             "/",
             routes![
-                oauth2::get_auth_google,
+                oauth2::get_refresh_token,
+                oauth2::get_provider_google,
                 oauth2::get_login_google,
                 // v1
                 v1::chain::post_chain_v1,

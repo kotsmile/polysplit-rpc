@@ -23,15 +23,33 @@ pub struct GoogleUserInfo {
     pub email: String,
 }
 
-#[get("/login/google")]
+#[get("/auth/refresh")]
+pub fn get_refresh_token(
+    cookies: &CookieJar<'_>,
+    jwt_service: &State<Arc<JwtService>>,
+    config_repo: &State<ConfigRepo>,
+) -> Result<Redirect, ResponseError> {
+    jwt_service
+        .setup_cookies_with_refresh(cookies)
+        .context("failed to setup cookies with refresh in jwt service")
+        .map_err(|err| ResponseError {
+            error: String::from("Failed to setup cookies"),
+            status: Status::InternalServerError,
+            internal_error: Err(err),
+        })?;
+
+    Ok(Redirect::to(config_repo.frontend_url.clone()))
+}
+
+#[get("/auth/login/google")]
 pub fn get_login_google(oauth2: OAuth2<GoogleUserInfo>, cookies: &CookieJar<'_>) -> Redirect {
     oauth2
         .get_redirect(cookies, &["https://www.googleapis.com/auth/userinfo.email"])
         .unwrap()
 }
 
-#[get("/auth/google")]
-pub async fn get_auth_google(
+#[get("/auth/provider/google")]
+pub async fn get_provider_google(
     token: TokenResponse<GoogleUserInfo>,
     cookies: &CookieJar<'_>,
     jwt_service: &State<Arc<JwtService>>,
@@ -107,9 +125,9 @@ pub async fn get_auth_google(
 
     jwt_service
         .setup_cookies(cookies, user_info.email.to_string(), &user_id)
-        .context("failed to setup cookies in google auth")
+        .context("failed to setup cookies in jwt service")
         .map_err(|err| ResponseError {
-            error: String::from("Failed to request google api"),
+            error: String::from("Failed to setup cookies"),
             status: Status::InternalServerError,
             internal_error: Err(err),
         })?;

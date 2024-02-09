@@ -1,33 +1,37 @@
-use anyhow::Result;
+use anyhow::{anyhow, Context, Result};
 use lazy_static::lazy_static;
 use rocket::http::{Cookie, CookieJar, SameSite};
 use rocket_jwt::jwt;
 use rocket_okapi::request::OpenApiFromRequest;
 use uuid::Uuid;
 
-pub struct JwtService;
-
-const ACCESS_TOKEN_KEY: &'static str = "access_token";
-
 lazy_static! {
-    static ref JWT_SECRET_KEY: String = {
+    static ref ACCESS_TOKEN_PKEY: String = {
         let _ = dotenvy::dotenv();
-        std::env::var("JWT_SECRET_KEY").unwrap()
+        std::env::var("ACCESS_TOKEN_PKEY").unwrap()
     };
-    static ref JWT_EXPIRATION_ACCESS: u32 = {
+    static ref REFRESH_TOKEN_PKEY: String = {
         let _ = dotenvy::dotenv();
-        std::env::var("JWT_EXPIRATION_ACCESS")
-            .unwrap()
-            .parse::<u32>()
-            .unwrap()
+        std::env::var("REFRESH_TOKEN_PKEY").unwrap()
     };
 }
 
-#[jwt(JWT_SECRET_KEY, exp = 10000, cookie = "access_token")]
+#[jwt(ACCESS_TOKEN_PKEY, exp = 86_400 /* 24 hours */, cookie = "access_token")]
 pub struct UserClaim {
     pub id: Uuid,
     pub email: String,
 }
+
+#[jwt(REFRESH_TOKEN_PKEY, exp = 604_800 /* 7 days */)]
+pub struct RefreshClaim {
+    pub id: Uuid,
+    pub email: String,
+}
+
+const ACCESS_TOKEN_COOKIE: &'static str = "access_token";
+const REFRESH_TOKEN_COOKIE: &'static str = "refresh_token";
+
+pub struct JwtService;
 
 impl JwtService {
     pub fn new() -> Self {
@@ -36,17 +40,40 @@ impl JwtService {
 
     pub fn setup_cookies(&self, cookies: &CookieJar<'_>, email: String, id: &Uuid) -> Result<()> {
         let access_token = UserClaim::sign(UserClaim {
+            email: email.clone(),
+            id: id.clone(),
+        });
+
+        let refresh_token = RefreshClaim::sign(RefreshClaim {
             email,
             id: id.clone(),
         });
 
         cookies.add(
-            Cookie::build((ACCESS_TOKEN_KEY, format!("Bearer {access_token}")))
+            Cookie::build((ACCESS_TOKEN_COOKIE, format!("Bearer {access_token}")))
+                .same_site(SameSite::Lax)
+                .build(),
+        );
+
+        cookies.add_private(
+            Cookie::build((REFRESH_TOKEN_COOKIE, refresh_token))
                 .same_site(SameSite::Lax)
                 .build(),
         );
 
         Ok(())
+    }
+
+    pub fn setup_cookies_with_refresh(&self, cookies: &CookieJar<'_>) -> Result<()> {
+        let refresh_token = cookies
+            .get_private(REFRESH_TOKEN_COOKIE)
+            .ok_or(anyhow!("refresh token is not exist"))?;
+
+        let refresh_claim = RefreshClaim::decode(refresh_token.value().to_string())
+            .context("failed to recover refresh token")?;
+
+        self.setup_cookies(cookies, refresh_claim.user.email, &refresh_claim.user.id)
+            .context("failed to setup cookies")
     }
 }
 
