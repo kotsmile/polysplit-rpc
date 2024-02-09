@@ -35,8 +35,7 @@ pub async fn get_chains(
 pub async fn get_chain_rpc(
     chain_id: &str,
     evm_rpc_service: &State<Arc<EvmRpcService>>,
-    // TODO: response with rpc object without id and visibility
-) -> ResponseResultData<Vec<Rpc>> {
+) -> ResponseResultData<Vec<String>> {
     evm_rpc_service
         .get_public_rpcs_for_chain_id(chain_id)
         .await
@@ -46,6 +45,7 @@ pub async fn get_chain_rpc(
             error: format!("Internal error"),
             internal_error: Err(err),
         })
+        .map(|v| v.iter().map(|el| el.url.clone()).collect())
         .map(ResponseData::build)
 }
 
