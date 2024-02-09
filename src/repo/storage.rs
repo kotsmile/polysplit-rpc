@@ -2,7 +2,7 @@ use anyhow::{bail, Context, Result};
 use sqlx::{postgres::PgPoolOptions, Pool, Postgres};
 use uuid::Uuid;
 
-use crate::models::{Chain, Group, NewRpc, Rpc, RpcVisibility, User};
+use crate::models::{Group, NewRpc, Rpc, RpcVisibility, User};
 
 pub struct StorageRepo {
     pool: Pool<Postgres>,
