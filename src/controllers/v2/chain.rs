@@ -7,6 +7,7 @@ use serde_json::Value;
 
 use crate::{
     client::chainlist::ChainConfig,
+    models::Rpc,
     repo::config::ConfigRepo,
     services::{evm_rpc::EvmRpcService, proxy::ProxyService},
     util::controllers::{ResponseData, ResponseError, ResponseResult, ResponseResultData},
@@ -33,9 +34,18 @@ pub async fn get_chains(
 #[get("/v2/chain/<chain_id>/rpc")]
 pub async fn get_chain_rpc(
     chain_id: &str,
-    emv_rpc_service: &State<Arc<EvmRpcService>>,
-) -> ResponseResultData<Vec<ChainConfig>> {
-    todo!()
+    evm_rpc_service: &State<Arc<EvmRpcService>>,
+) -> ResponseResultData<Vec<Rpc>> {
+    evm_rpc_service
+        .get_public_rpcs_for_chain_id(chain_id)
+        .await
+        .context("failed to get public rpcs from evm_rpc service")
+        .map_err(|err| ResponseError {
+            status: Status::InternalServerError,
+            error: format!("Internal error"),
+            internal_error: Err(err),
+        })
+        .map(ResponseData::build)
 }
 
 #[openapi(tag = "Chains")]

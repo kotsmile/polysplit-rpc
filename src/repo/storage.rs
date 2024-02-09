@@ -106,17 +106,31 @@ impl StorageRepo {
         .context("failed to select from rpcs")
     }
 
-    // pub async fn create_rpc(&self, new_rpc: &NewRpc) -> Result<Option<Rpc>> {
-    //     sqlx::query_as!(
-    //         Rpc,
-    //         "insert into rpcs (chain_id, url) values ($1, $2) returning *;",
-    //         new_rpc.chain_id,
-    //         new_rpc.url
-    //     )
-    //     .fetch_optional(&self.pool)
-    //     .await
-    //     .context("failed to insert row in rpcs table")
-    // }
+    pub async fn create_rpcs(&self, new_rpcs: &Vec<NewRpc>) -> Result<()> {
+        let mut tx = self
+            .pool
+            .begin()
+            .await
+            .context("failed to init transaction")?;
+
+        for new_rpc in new_rpcs {
+            sqlx::query!(
+                "insert into rpcs (chain_id, url, visibility) values ($1, $2, $3) on conflict (url) do nothing;",
+                new_rpc.chain_id,
+                new_rpc.url,
+                &new_rpc.visibility as &RpcVisibility
+            )
+            .fetch_optional(&mut *tx)
+            .await
+            .context("failed to insert row in rpcs table")?;
+        }
+
+        tx.commit()
+            .await
+            .context("failed to finalize transaction")?;
+
+        Ok(())
+    }
 
     pub async fn update_api_key(&self, group_id: &Uuid, api_key: &str) -> Result<()> {
         sqlx::query!(

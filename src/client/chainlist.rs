@@ -5,6 +5,8 @@ use regex_macro::regex;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
+use crate::util::deserialize_number_to_string;
+
 const RESOURCE_URL: &'static str =
     "https://raw.githubusercontent.com/DefiLlama/chainlist/main/constants/extraRpcs.js";
 const TARGET_START_LINE: &'static str = "export const extraRpcs = {";
@@ -25,7 +27,8 @@ pub struct ChainConfig {
     #[serde(rename = "infoURL")]
     pub info_url: String,
     pub short_name: String,
-    pub chain_id: i64,
+    #[serde(deserialize_with = "deserialize_number_to_string")]
+    pub chain_id: String,
     pub network_id: i64,
     pub slip44: Option<i64>,
     pub ens: Option<Ens>,
