@@ -28,6 +28,7 @@ pub fn setup_app(
 ) -> Rocket<Build> {
     std::env::set_var("ROCKET_PORT", config_repo.port.to_string());
     std::env::set_var("ROCKET_OAUTH", config_repo.rocket_oauth.to_string());
+    std::env::set_var("ROCKET_SECRET_KEY", config_repo.secret_key.to_string());
     rocket::build()
         .manage(config_repo)
         .manage(evm_rpc_service)

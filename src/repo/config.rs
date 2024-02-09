@@ -8,6 +8,7 @@ pub struct ConfigRepo {
     pub proxyseller_api_key: String,
     pub supported_chain_ids: Vec<String>,
     pub feed_max_timeout: Duration,
+    pub secret_key: String,
     pub frontend_url_sign_in: String,
     pub frontend_url_profile: String,
     pub database_url: String,
@@ -35,6 +36,7 @@ impl ConfigRepo {
 
         let frontend_url_sign_in = get_env("FRONTEND_URL_SIGN_IN")?;
         let frontend_url_profile = get_env("FRONTEND_URL_PROFILE")?;
+        let secret_key = get_env("SECRET_KEY")?;
         let database_url = get_env("DATABASE_URL")?;
 
         // oauth
@@ -60,6 +62,7 @@ impl ConfigRepo {
             supported_chain_ids,
             frontend_url_sign_in,
             frontend_url_profile,
+            secret_key,
             database_url,
             feed_max_timeout,
             rocket_oauth,

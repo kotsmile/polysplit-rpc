@@ -17,8 +17,11 @@ services:
     build: .
     depends_on:
       - db
+    environment:
+      DATABASE_URL: postgres://postgres:password@db:5432/db
     env_file:
       - .env
+
     ports:
       - "3001:3001"
     restart: unless-stopped
