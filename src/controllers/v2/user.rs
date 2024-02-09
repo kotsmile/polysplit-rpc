@@ -19,7 +19,7 @@ pub async fn get_user_me(
     let user = user_service
         .get_user_by_email(&user.email)
         .await
-        .context("failed to find user")
+        .context("failed to find user in group service")
         .map_err(|err| ResponseError {
             error: "Failed to find user".to_string(),
             status: Status::InternalServerError,

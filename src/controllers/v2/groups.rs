@@ -24,7 +24,7 @@ pub async fn get_group_rpcs(
     let _ = group_service
         .get_group_with_owner(&user.id, &group_id)
         .await
-        .context("no group with owner id")
+        .context("failed to find group with owner id in group service")
         .map_err(|err| ResponseError {
             status: Status::NotFound,
             error: format!("Failed to find group"),
@@ -34,7 +34,7 @@ pub async fn get_group_rpcs(
     group_service
         .get_group_rpcs(&group_id)
         .await
-        .context("failed to request rpcs for group")
+        .context("failed to request rpcs for group in group service")
         .map_err(|err| ResponseError {
             status: Status::InternalServerError,
             error: format!("Failed to find rpcs"),
@@ -72,7 +72,7 @@ pub async fn post_group_rpc(
             return Err(ResponseError {
                 error: format!("Bad format of url: {err}"),
                 status: Status::BadRequest,
-                internal_error: Err(err).context("failed to pares url"),
+                internal_error: Err(err).context("failed to parse url"),
             });
         }
     }
@@ -80,7 +80,7 @@ pub async fn post_group_rpc(
     let _ = group_service
         .get_group_with_owner(&user.id, &group_id)
         .await
-        .context("no group with owner id")
+        .context("no group with owner id in group service")
         .map_err(|err| ResponseError {
             status: Status::NotFound,
             error: format!("Failed to find group"),
@@ -97,7 +97,7 @@ pub async fn post_group_rpc(
             },
         )
         .await
-        .context("failed to add rpc to group")
+        .context("failed to add rpc to group in group service")
         .map_err(|err| ResponseError {
             internal_error: Err(err),
             status: Status::InternalServerError,
@@ -121,7 +121,7 @@ pub async fn update_group_api_key(
     let _ = group_service
         .get_group_with_owner(&user.id, &group_id)
         .await
-        .context("no group with owner id")
+        .context("failed to find group with owner id in group service")
         .map_err(|err| ResponseError {
             status: Status::NotFound,
             error: format!("Failed to find group"),
@@ -131,7 +131,7 @@ pub async fn update_group_api_key(
     let api_key = group_service
         .update_api_key(&group_id)
         .await
-        .context("failed to update api key")
+        .context("failed to update api key in group service")
         .map_err(|err| ResponseError {
             status: Status::InternalServerError,
             error: format!("Internal error"),
@@ -150,7 +150,7 @@ pub async fn get_groups(
     group_service
         .get_groups_for_user(&user.id)
         .await
-        .context("failed to get all groups for user")
+        .context("failed to get all groups for user in group service")
         .map_err(|err| ResponseError {
             error: format!("Failed to retrieve groups"),
             status: Status::InternalServerError,
@@ -176,7 +176,7 @@ pub async fn post_group(
     group_service
         .create_group(&user.id, &new_group.name)
         .await
-        .context("failed to create group for user")
+        .context("failed to create group for user in group service")
         .map_err(|err| ResponseError {
             error: format!("Failed to create new group"),
             status: Status::InternalServerError,

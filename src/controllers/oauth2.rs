@@ -40,7 +40,7 @@ pub async fn get_auth_google(
 ) -> Result<Redirect, ResponseError> {
     let user_info: GoogleUserInfo = reqwest::Client::builder()
         .build()
-        .context("failed to build reqwest client")
+        .context("failed to build reqwest client for google api")
         .map_err(|err| ResponseError {
             error: String::from("Failed to request google api"),
             status: Status::InternalServerError,
@@ -50,7 +50,7 @@ pub async fn get_auth_google(
         .query(&[("access_token", token.access_token())])
         .send()
         .await
-        .context("failed to complete request")
+        .context("failed to complete request to google api")
         .map_err(|err| ResponseError {
             error: String::from("Failed to request google api"),
             status: Status::InternalServerError,
@@ -58,7 +58,7 @@ pub async fn get_auth_google(
         })?
         .json()
         .await
-        .context("failed to deserialize response")
+        .context("failed to deserialize response from google api")
         .map_err(|err| ResponseError {
             error: String::from("Failed to request google api"),
             status: Status::InternalServerError,
@@ -68,7 +68,7 @@ pub async fn get_auth_google(
     let user = user_service
         .get_user_by_email(&user_info.email)
         .await
-        .context("failed to find user")
+        .context("failed to find user in user service")
         .map_err(|err| ResponseError {
             error: String::from("Internal error"),
             status: Status::InternalServerError,
@@ -83,7 +83,7 @@ pub async fn get_auth_google(
                     email: user_info.email.clone(),
                 })
                 .await
-                .context("failed to find user")
+                .context("failed to find user in user service")
                 .map_err(|err| ResponseError {
                     error: String::from("Internal error"),
                     status: Status::InternalServerError,
@@ -107,7 +107,7 @@ pub async fn get_auth_google(
 
     jwt_service
         .setup_cookies(cookies, user_info.email.to_string(), &user_id)
-        .context("failed to setup cookies")
+        .context("failed to setup cookies in google auth")
         .map_err(|err| ResponseError {
             error: String::from("Failed to request google api"),
             status: Status::InternalServerError,
