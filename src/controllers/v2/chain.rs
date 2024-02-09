@@ -7,7 +7,6 @@ use serde_json::Value;
 
 use crate::{
     client::chainlist::ChainConfig,
-    models::Rpc,
     repo::config::ConfigRepo,
     services::{evm_rpc::EvmRpcService, proxy::ProxyService},
     util::controllers::{ResponseData, ResponseError, ResponseResult, ResponseResultData},
