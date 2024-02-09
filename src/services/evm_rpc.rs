@@ -4,6 +4,7 @@ use std::time::{Duration, Instant};
 
 use anyhow::{anyhow, bail, Context};
 use reqwest::Client;
+use rocket::async_trait;
 use rocket::form::validate::Contains;
 use rocket::tokio::sync::RwLock;
 use schemars::JsonSchema;
@@ -15,7 +16,6 @@ use crate::client::chainlist::{ChainConfig, ChainlistClient};
 use crate::models::proxy::ProxyConfig;
 use crate::models::{Chain, NewRpc, Rpc, RpcVisibility};
 use crate::repo::cache::CacheRepo;
-use crate::repo::storage::StorageRepo;
 
 #[derive(Debug, Error)]
 pub enum EvmRpcError {
@@ -49,22 +49,31 @@ impl RpcMetrics {
     }
 }
 
+#[async_trait]
+pub trait EvmRpcStorage: Send + Sync + 'static {
+    async fn create_chains(&self, chains: &Vec<Chain>) -> anyhow::Result<()>;
+    async fn get_chains(&self) -> anyhow::Result<Vec<Chain>>;
+    async fn create_rpcs(&self, new_rpcs: &Vec<NewRpc>) -> anyhow::Result<()>;
+    async fn get_public_rpcs_by_chain_id(&self, chain_id: &str) -> anyhow::Result<Vec<Rpc>>;
+    async fn get_rpcs_by_chain_id(&self, chain_id: &str) -> anyhow::Result<Vec<Rpc>>;
+}
+
 pub struct EvmRpcService {
     cache_repo: Arc<RwLock<CacheRepo>>,
     chainlist_client: Box<ChainlistClient>,
-    storage_repo: Arc<StorageRepo>,
+    evm_storage_repo: Arc<dyn EvmRpcStorage>,
 }
 
 impl EvmRpcService {
     pub fn new(
         cache_repo: Arc<RwLock<CacheRepo>>,
         chainlist_client: Box<ChainlistClient>,
-        storage_repo: Arc<StorageRepo>,
+        evm_storage_repo: Arc<dyn EvmRpcStorage>,
     ) -> Self {
         Self {
             cache_repo,
             chainlist_client,
-            storage_repo,
+            evm_storage_repo,
         }
     }
 
@@ -106,7 +115,7 @@ impl EvmRpcService {
             })
         }
 
-        self.storage_repo
+        self.evm_storage_repo
             .create_chains(&chains)
             .await
             .context("failed to create chains in storage repo")?;
@@ -122,7 +131,7 @@ impl EvmRpcService {
             .context("failed to fetch rpcs from chainlist client")?;
 
         let chains = self
-            .storage_repo
+            .evm_storage_repo
             .get_chains()
             .await
             .context("failed to get chains from storage repo")?;
@@ -133,7 +142,7 @@ impl EvmRpcService {
                 continue;
             };
 
-            self.storage_repo
+            self.evm_storage_repo
                 .create_rpcs(
                     &rpcs
                         .iter()
@@ -268,7 +277,7 @@ impl EvmRpcService {
     }
 
     pub async fn get_public_rpcs_for_chain_id(&self, chain_id: &str) -> anyhow::Result<Vec<Rpc>> {
-        self.storage_repo
+        self.evm_storage_repo
             .get_public_rpcs_by_chain_id(chain_id)
             .await
             .context("failed to get public rpcs for chain id from storage repo")
@@ -279,7 +288,7 @@ impl EvmRpcService {
     }
 
     pub async fn get_rpcs_for_chain_id(&self, chain_id: &str) -> anyhow::Result<Vec<Rpc>> {
-        self.storage_repo
+        self.evm_storage_repo
             .get_rpcs_by_chain_id(chain_id)
             .await
             .context("failed to to get rpcs for chain id from storage repo")

@@ -1,29 +1,42 @@
 use std::sync::Arc;
 
 use anyhow::{bail, Context, Result};
-use rocket::tokio::sync::RwLock;
+use rocket::{async_trait, tokio::sync::RwLock};
 use uuid::Uuid;
 
 use crate::{
     models::{Group, NewRpc, Rpc},
-    repo::{cache::CacheRepo, storage::StorageRepo},
+    repo::cache::CacheRepo,
 };
 
 pub struct GroupService {
-    storage_repo: Arc<StorageRepo>,
+    group_storage: Arc<dyn GroupStorage>,
     cache_repo: Arc<RwLock<CacheRepo>>,
 }
 
+#[async_trait]
+pub trait GroupStorage: Send + Sync + 'static {
+    async fn create_group(&self, new_group: &Group) -> Result<Option<Group>>;
+    async fn update_api_key(&self, group_id: &Uuid, api_key: &str) -> Result<()>;
+    async fn get_groups_for_user(&self, user_id: &Uuid) -> Result<Vec<Group>>;
+    async fn get_groups(&self) -> Result<Vec<Group>>;
+    async fn get_group_by_id(&self, group_id: &Uuid) -> Result<Option<Group>>;
+    async fn get_group_rpcs(&self, group_id: &Uuid) -> Result<Vec<Rpc>>;
+    async fn get_rpc_by_url(&self, url: &str) -> Result<Option<Rpc>>;
+    async fn add_group_rpc(&self, group_id: &Uuid, rpc_id: &i32) -> Result<()>;
+    async fn create_and_add_rpc_to_group(&self, group_id: &Uuid, new_rpc: &NewRpc) -> Result<Rpc>;
+}
+
 impl GroupService {
-    pub fn new(storage_repo: Arc<StorageRepo>, cache_repo: Arc<RwLock<CacheRepo>>) -> Self {
+    pub fn new(group_storage: Arc<dyn GroupStorage>, cache_repo: Arc<RwLock<CacheRepo>>) -> Self {
         Self {
-            storage_repo,
+            group_storage,
             cache_repo,
         }
     }
 
     pub async fn create_group(&self, user_id: &Uuid, name: &str) -> Result<Option<Group>> {
-        self.storage_repo
+        self.group_storage
             .create_group(&Group {
                 id: Uuid::new_v4(),
                 owner_id: user_id.clone(),
@@ -61,7 +74,7 @@ impl GroupService {
         };
 
         let api_key = Uuid::new_v4().to_string();
-        self.storage_repo
+        self.group_storage
             .update_api_key(group_id, &api_key)
             .await
             .context("failed to update api key in storage repo")?;
@@ -74,28 +87,28 @@ impl GroupService {
     }
 
     pub async fn get_groups_for_user(&self, user_id: &Uuid) -> Result<Vec<Group>> {
-        self.storage_repo
+        self.group_storage
             .get_groups_for_user(user_id)
             .await
             .context("failed to find groups for user in storage repo")
     }
 
     pub async fn get_groups(&self) -> Result<Vec<Group>> {
-        self.storage_repo
+        self.group_storage
             .get_groups()
             .await
             .context("failed to find groups in storage repo")
     }
 
     pub async fn get_group_by_id(&self, group_id: &Uuid) -> Result<Option<Group>> {
-        self.storage_repo
+        self.group_storage
             .get_group_by_id(group_id)
             .await
             .context("failed to find group by id in storage repo")
     }
 
     pub async fn get_group_rpcs(&self, group_id: &Uuid) -> Result<Vec<Rpc>> {
-        self.storage_repo
+        self.group_storage
             .get_group_rpcs(group_id)
             .await
             .context("failed to request rpcs for group in storage repo")
@@ -103,19 +116,19 @@ impl GroupService {
 
     pub async fn add_rpc_to_group(&self, group_id: &Uuid, new_rpc: &NewRpc) -> Result<Rpc> {
         match self
-            .storage_repo
+            .group_storage
             .get_rpc_by_url(&new_rpc.url)
             .await
             .context("failed to request rpc in storage repo")?
         {
             Some(rpc) => self
-                .storage_repo
+                .group_storage
                 .add_group_rpc(group_id, &rpc.id)
                 .await
                 .context("failed to add rpc to group in storage repo")
                 .map(|_| rpc),
             None => self
-                .storage_repo
+                .group_storage
                 .create_and_add_rpc_to_group(group_id, new_rpc)
                 .await
                 .context("failed to create rpc and add it to group in storage repo"),
