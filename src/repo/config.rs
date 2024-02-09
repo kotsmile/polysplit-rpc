@@ -16,7 +16,12 @@ pub struct ConfigRepo {
 }
 
 fn get_env(name: &str) -> Result<String> {
-    std::env::var(name).context(format!("failed to access \"{name}\" var"))
+    std::env::var(name)
+        .context(format!("failed to access \"{name}\" var"))
+        .map(|v| {
+            println!("{name}={v}");
+            v
+        })
 }
 
 impl ConfigRepo {

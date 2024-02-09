@@ -19,8 +19,8 @@ use crate::{
     util::controllers::{ResponseData, ResponseError, ResponseResult, ResponseResultData},
 };
 
-#[openapi("Chain")]
-#[get("/v1/chain")]
+#[openapi(tag = "Chain")]
+#[get("/v1/chains/supported")]
 pub async fn get_chains(config_repo: &State<ConfigRepo>) -> ResponseResultData<Vec<String>> {
     Ok(ResponseData::build(config_repo.supported_chain_ids.clone()))
 }

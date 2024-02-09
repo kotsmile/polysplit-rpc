@@ -35,6 +35,7 @@ pub async fn get_chains(
 pub async fn get_chain_rpc(
     chain_id: &str,
     evm_rpc_service: &State<Arc<EvmRpcService>>,
+    // TODO: response with rpc object without id and visibility
 ) -> ResponseResultData<Vec<Rpc>> {
     evm_rpc_service
         .get_public_rpcs_for_chain_id(chain_id)
