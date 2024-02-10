@@ -88,13 +88,13 @@ pub async fn post_chain(
 
     let rpc_call = rpc_call.into_inner();
     let proxy_service = proxy_service.read().await;
-    let proxy_config = proxy_service.get_proxy();
+    let proxy_config = proxy_service.get_proxy().await;
     for i in 1..3 {
         for rpc in &rpcs {
             let response = evm_rpc_service
                 .rpc_request(
                     &rpc,
-                    proxy_config,
+                    proxy_config.clone(),
                     &rpc_call,
                     config_repo.feed_max_timeout * i,
                 )

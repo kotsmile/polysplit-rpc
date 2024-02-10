@@ -2,7 +2,6 @@
 use std::sync::Arc;
 
 use anyhow::{Context, Result};
-use rocket::tokio::sync::RwLock;
 
 mod client;
 mod controllers;
@@ -35,7 +34,7 @@ async fn main() -> Result<()> {
     let _ = dotenvy::dotenv();
     env_logger::init();
 
-    let cache_repo = Arc::new(RwLock::new(CacheRepo::new()));
+    let cache_repo = Arc::new(CacheRepo::new());
     let config_repo = ConfigRepo::new().context("failed to initiate config repo")?;
     let storage_repo = Arc::new(
         StorageRepo::new(config_repo.database_url.clone(), 5)
@@ -54,16 +53,16 @@ async fn main() -> Result<()> {
     ));
     let chainlist_client = Box::new(ChainlistClient::new());
 
-    let proxy_service = Arc::new(RwLock::new(ProxyService::new(proxyseller_client)));
+    let proxy_service = Arc::new(ProxyService::new(proxyseller_client));
     let evm_rpc_service = Arc::new(EvmRpcService::new(
-        cache_repo.clone(),
         chainlist_client.clone(),
+        cache_repo.clone(),
         storage_repo.clone(),
     ));
     let monitoring_service = Arc::new(MonitoringService::new(cache_repo.clone()));
     let jwt_service = Arc::new(JwtService::new());
     let user_service = Arc::new(UserService::new(storage_repo.clone()));
-    let group_service = Arc::new(GroupService::new(storage_repo.clone(), cache_repo.clone()));
+    let group_service = Arc::new(GroupService::new(cache_repo.clone(), storage_repo.clone()));
 
     run_tasks(
         evm_rpc_service.clone(),

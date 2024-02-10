@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use rocket::{catchers, http::Method, routes, tokio::sync::RwLock, Build, Rocket};
+use rocket::{catchers, http::Method, routes, Build, Rocket};
 use rocket_cors::{AllowedOrigins, CorsOptions};
 use rocket_governor::rocket_governor_catcher;
 use rocket_oauth2::OAuth2;
@@ -20,7 +20,7 @@ use crate::services::{
 pub fn setup_app(
     config_repo: ConfigRepo,
     evm_rpc_service: Arc<EvmRpcService>,
-    proxy_service: Arc<RwLock<ProxyService>>,
+    proxy_service: Arc<ProxyService>,
     monitoring_service: Arc<MonitoringService>,
     jwt_service: Arc<JwtService>,
     user_service: Arc<UserService>,

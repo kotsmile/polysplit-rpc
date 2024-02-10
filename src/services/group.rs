@@ -1,17 +1,14 @@
 use std::sync::Arc;
 
 use anyhow::{bail, Context, Result};
-use rocket::{async_trait, tokio::sync::RwLock};
+use rocket::async_trait;
 use uuid::Uuid;
 
-use crate::{
-    models::{Group, NewRpc, Rpc},
-    repo::cache::CacheRepo,
-};
+use crate::models::{Group, NewRpc, Rpc};
 
 pub struct GroupService {
     group_storage: Arc<dyn GroupStorage>,
-    cache_repo: Arc<RwLock<CacheRepo>>,
+    group_cache: Arc<dyn GroupCache>,
 }
 
 #[async_trait]
@@ -27,11 +24,16 @@ pub trait GroupStorage: Send + Sync + 'static {
     async fn create_and_add_rpc_to_group(&self, group_id: &Uuid, new_rpc: &NewRpc) -> Result<Rpc>;
 }
 
+#[async_trait]
+pub trait GroupCache: Send + Sync + 'static {
+    async fn update_api_key(&self, old_api_key: &str, new_api_key: &str);
+}
+
 impl GroupService {
-    pub fn new(group_storage: Arc<dyn GroupStorage>, cache_repo: Arc<RwLock<CacheRepo>>) -> Self {
+    pub fn new(group_cache: Arc<dyn GroupCache>, group_storage: Arc<dyn GroupStorage>) -> Self {
         Self {
+            group_cache,
             group_storage,
-            cache_repo,
         }
     }
 
@@ -79,10 +81,9 @@ impl GroupService {
             .await
             .context("failed to update api key in storage repo")?;
 
-        self.cache_repo
-            .write()
-            .await
-            .update_api_key(&group.api_key, &api_key);
+        self.group_cache
+            .update_api_key(&group.api_key, &api_key)
+            .await;
         Ok(api_key)
     }
 

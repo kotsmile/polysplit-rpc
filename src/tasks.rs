@@ -1,7 +1,7 @@
 use std::{collections::HashMap, sync::Arc};
 
 use anyhow::Context;
-use rocket::tokio::{sync::RwLock, task};
+use rocket::tokio::task;
 
 use crate::{
     crons::rpc_feed_cron,
@@ -16,7 +16,7 @@ use crate::{
 pub async fn run_tasks(
     evm_rpc_service: Arc<EvmRpcService>,
     group_service: Arc<GroupService>,
-    proxy_service: Arc<RwLock<ProxyService>>,
+    proxy_service: Arc<ProxyService>,
     config_repo: ConfigRepo,
 ) {
     {
@@ -24,8 +24,6 @@ pub async fn run_tasks(
         let proxy_service = proxy_service.clone();
         task::spawn(async move {
             let _ = proxy_service
-                .write()
-                .await
                 .init_proxies()
                 .await
                 .map_err(|err| log::error!("failed to init proxy: {err}"));

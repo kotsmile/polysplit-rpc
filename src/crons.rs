@@ -2,7 +2,6 @@ use std::{cmp::Ordering, collections::HashMap, sync::Arc, time::Duration};
 
 use anyhow::{Context, Result};
 use futures::stream::{FuturesUnordered, StreamExt};
-use rocket::tokio::sync::RwLock;
 use tokio_cron_scheduler::{Job, JobScheduler};
 
 use crate::{
@@ -18,7 +17,7 @@ const BATCH_SIZE: usize = 100;
 
 pub async fn run_crons(
     evm_rpc_service: Arc<EvmRpcService>,
-    proxy_service: Arc<RwLock<ProxyService>>,
+    proxy_service: Arc<ProxyService>,
     group_service: Arc<GroupService>,
     config_repo: ConfigRepo,
 ) -> Result<()> {
@@ -66,10 +65,8 @@ pub async fn run_crons(
     Ok(())
 }
 
-pub async fn proxy_updater_cron(proxy_service: Arc<RwLock<ProxyService>>) {
+pub async fn proxy_updater_cron(proxy_service: Arc<ProxyService>) {
     let _ = proxy_service
-        .write()
-        .await
         .rotate_proxy()
         .await
         .map_err(|err| log::error!("failed to rotate proxy: {err}"));
@@ -77,7 +74,7 @@ pub async fn proxy_updater_cron(proxy_service: Arc<RwLock<ProxyService>>) {
 
 pub async fn rpc_feed_cron(
     evm_rpc_service: Arc<EvmRpcService>,
-    proxy_service: Arc<RwLock<ProxyService>>,
+    proxy_service: Arc<ProxyService>,
     supported_chain_ids: Vec<String>,
     feed_max_timeout: Duration,
     group_service: Arc<GroupService>,
@@ -96,13 +93,13 @@ pub async fn rpc_feed_cron(
 
         let mut rpc_to_metric: HashMap<String, Result<RpcMetrics>> = HashMap::new();
         for batch in rpcs.chunks(BATCH_SIZE) {
-            let proxy_service = proxy_service.read().await;
-            let proxy_config = proxy_service.get_proxy();
+            let proxy_config = proxy_service.get_proxy().await;
             let mut futures = FuturesUnordered::new();
             for rpc in batch {
                 let evm_rpc_service_clone = evm_rpc_service.clone();
                 let rpc_clone = rpc.to_owned();
 
+                let proxy_config = proxy_config.clone();
                 futures.push(async move {
                     let metric = evm_rpc_service_clone
                         .rpc_health_check(
