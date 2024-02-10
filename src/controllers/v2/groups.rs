@@ -141,12 +141,18 @@ pub async fn update_group_api_key(
     Ok(ResponseData::build(UpdateApiKeyResponse { api_key }))
 }
 
+#[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
+pub struct ResponseGroup {
+    pub id: Uuid,
+    pub name: String,
+}
+
 #[openapi(tag = "Groups")]
 #[get("/v2/groups")]
 pub async fn get_groups(
     user: UserClaim,
     group_service: &State<Arc<GroupService>>,
-) -> ResponseResultData<Vec<Group>> {
+) -> ResponseResultData<Vec<ResponseGroup>> {
     group_service
         .get_groups_for_user(&user.id)
         .await
@@ -155,6 +161,33 @@ pub async fn get_groups(
             error: format!("Failed to retrieve groups"),
             status: Status::InternalServerError,
             internal_error: Err(err),
+        })
+        .map(|v| {
+            v.iter()
+                .map(|g| ResponseGroup {
+                    id: g.id,
+                    name: g.name.clone(),
+                })
+                .collect()
+        })
+        .map(ResponseData::build)
+}
+
+#[openapi(tag = "Groups")]
+#[get("/v2/groups/<group_id>")]
+pub async fn get_group_id(
+    group_id: Uuid,
+    user: UserClaim,
+    group_service: &State<Arc<GroupService>>,
+) -> ResponseResultData<Group> {
+    group_service
+        .get_group_with_owner(&user.id, &group_id)
+        .await
+        .context("failed to find group with owner id in group service")
+        .map_err(|err| ResponseError {
+            status: Status::NotFound,
+            error: format!("Failed to find group"),
+            internal_error: Err(anyhow!("no group was found for: {group_id}: {err}")),
         })
         .map(ResponseData::build)
 }
