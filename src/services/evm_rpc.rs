@@ -31,7 +31,7 @@ pub enum EvmRpcError {
 
 #[derive(Deserialize)]
 pub struct EvmRpcTestResponse {
-    pub ksonrpc: String,
+    pub jsonrpc: String,
     pub id: u32,
     pub result: String,
 }
