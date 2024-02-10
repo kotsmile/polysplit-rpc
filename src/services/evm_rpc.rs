@@ -11,7 +11,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use thiserror::Error;
 
-use crate::client::chainlist::{ChainConfig, ChainlistClient};
+use crate::client::chainlist::ChainConfig;
 use crate::models::proxy::ProxyConfig;
 use crate::models::{Chain, NewRpc, Rpc, RpcVisibility};
 
@@ -64,22 +64,28 @@ pub trait EvmRpcCache: Send + Sync + 'static {
     async fn set_rpcs_for_chain_id(&self, chain_id: &str, rpcs: Vec<(String, RpcMetrics)>);
 }
 
+#[async_trait]
+pub trait EvmRpcClient: Send + Sync + 'static {
+    async fn fetch_rpcs(&self) -> anyhow::Result<HashMap<String, Vec<String>>>;
+    async fn fetch_chains(&self) -> anyhow::Result<Vec<ChainConfig>>;
+}
+
 pub struct EvmRpcService {
-    chainlist_client: Box<ChainlistClient>,
-    evm_cache: Arc<dyn EvmRpcCache>,
-    evm_storage_repo: Arc<dyn EvmRpcStorage>,
+    evm_rpc_client: Box<dyn EvmRpcClient>,
+    evm_rpc_cache: Arc<dyn EvmRpcCache>,
+    evm_rpc_storage: Arc<dyn EvmRpcStorage>,
 }
 
 impl EvmRpcService {
     pub fn new(
-        chainlist_client: Box<ChainlistClient>,
-        evm_cache: Arc<dyn EvmRpcCache>,
-        evm_storage_repo: Arc<dyn EvmRpcStorage>,
+        evm_rpc_client: Box<dyn EvmRpcClient>,
+        evm_rpc_cache: Arc<dyn EvmRpcCache>,
+        evm_rpc_storage: Arc<dyn EvmRpcStorage>,
     ) -> Self {
         Self {
-            chainlist_client,
-            evm_cache,
-            evm_storage_repo,
+            evm_rpc_client,
+            evm_rpc_cache,
+            evm_rpc_storage,
         }
     }
 
@@ -121,7 +127,7 @@ impl EvmRpcService {
             })
         }
 
-        self.evm_storage_repo
+        self.evm_rpc_storage
             .create_chains(&chains)
             .await
             .context("failed to create chains in storage repo")?;
@@ -131,13 +137,13 @@ impl EvmRpcService {
 
     pub async fn update_public_rpcs(&self) -> anyhow::Result<()> {
         let chain_id_to_rpcs = self
-            .chainlist_client
+            .evm_rpc_client
             .fetch_rpcs()
             .await
             .context("failed to fetch rpcs from chainlist client")?;
 
         let chains = self
-            .evm_storage_repo
+            .evm_rpc_storage
             .get_chains()
             .await
             .context("failed to get chains from storage repo")?;
@@ -148,7 +154,7 @@ impl EvmRpcService {
                 continue;
             };
 
-            self.evm_storage_repo
+            self.evm_rpc_storage
                 .create_rpcs(
                     &rpcs
                         .iter()
@@ -170,7 +176,7 @@ impl EvmRpcService {
     }
 
     pub async fn get_chains(&self) -> anyhow::Result<Vec<ChainConfig>> {
-        self.chainlist_client
+        self.evm_rpc_client
             .fetch_chains()
             .await
             .context("failed to fetch chains from chainlist client")
@@ -283,18 +289,18 @@ impl EvmRpcService {
     }
 
     pub async fn get_public_rpcs_for_chain_id(&self, chain_id: &str) -> anyhow::Result<Vec<Rpc>> {
-        self.evm_storage_repo
+        self.evm_rpc_storage
             .get_public_rpcs_by_chain_id(chain_id)
             .await
             .context("failed to get public rpcs for chain id from storage repo")
     }
 
     pub async fn fetch_rpcs(&self) -> anyhow::Result<HashMap<String, Vec<String>>> {
-        self.chainlist_client.fetch_rpcs().await
+        self.evm_rpc_client.fetch_rpcs().await
     }
 
     pub async fn get_rpcs_for_chain_id(&self, chain_id: &str) -> anyhow::Result<Vec<Rpc>> {
-        self.evm_storage_repo
+        self.evm_rpc_storage
             .get_rpcs_by_chain_id(chain_id)
             .await
             .context("failed to to get rpcs for chain id from storage repo")
@@ -305,14 +311,16 @@ impl EvmRpcService {
         chain_id: &str,
         rpcs: Vec<(String, RpcMetrics)>,
     ) {
-        self.evm_cache.set_rpcs_for_chain_id(chain_id, rpcs).await;
+        self.evm_rpc_cache
+            .set_rpcs_for_chain_id(chain_id, rpcs)
+            .await;
     }
 
     pub async fn get_rpcs_for_chain_id_cache(
         &self,
         chain_id: &str,
     ) -> Option<Vec<(String, RpcMetrics)>> {
-        self.evm_cache.get_rpcs_for_chain_id(chain_id).await
+        self.evm_rpc_cache.get_rpcs_for_chain_id(chain_id).await
     }
 
     pub async fn get_rpcs_for_api_key_cache(
@@ -320,7 +328,9 @@ impl EvmRpcService {
         api_key: &str,
         chain_id: &str,
     ) -> Option<Vec<String>> {
-        self.evm_cache.get_rpcs_for_api_key(api_key, chain_id).await
+        self.evm_rpc_cache
+            .get_rpcs_for_api_key(api_key, chain_id)
+            .await
     }
 
     pub async fn set_rpcs_for_api_key_cache(
@@ -333,7 +343,7 @@ impl EvmRpcService {
             return;
         }
 
-        self.evm_cache
+        self.evm_rpc_cache
             .set_rpcs_for_api_key(api_key, chain_id, rpcs)
             .await;
     }

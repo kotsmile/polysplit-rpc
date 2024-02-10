@@ -2,10 +2,11 @@ use std::collections::HashMap;
 
 use anyhow::{anyhow, Context, Result};
 use regex_macro::regex;
+use rocket::async_trait;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-use crate::util::deserialize_number_to_string;
+use crate::{services::evm_rpc::EvmRpcClient, util::deserialize_number_to_string};
 
 const RESOURCE_URL: &'static str =
     "https://raw.githubusercontent.com/DefiLlama/chainlist/main/constants/extraRpcs.js";
@@ -93,8 +94,11 @@ impl ChainlistClient {
     pub fn new() -> Self {
         Self {}
     }
+}
 
-    pub async fn fetch_rpcs(&self) -> Result<HashMap<String, Vec<String>>> {
+#[async_trait]
+impl EvmRpcClient for ChainlistClient {
+    async fn fetch_rpcs(&self) -> Result<HashMap<String, Vec<String>>> {
         let content = reqwest::get(RESOURCE_URL)
             .await
             .context("failed to make resposne to github")?
@@ -146,7 +150,7 @@ impl ChainlistClient {
         Ok(chain_to_rpc)
     }
 
-    pub async fn fetch_chains(&self) -> Result<Vec<ChainConfig>> {
+    async fn fetch_chains(&self) -> Result<Vec<ChainConfig>> {
         reqwest::get(CHAINS_URL)
             .await
             .context("failed to make resposne to chains source")?
