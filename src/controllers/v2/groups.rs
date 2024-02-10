@@ -208,6 +208,11 @@ pub async fn get_group_id(
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
+pub struct CreateGroupRequest {
+    name: String,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
 pub struct CreateGroupResponse {
     id: Uuid,
     name: String,
@@ -218,7 +223,7 @@ pub struct CreateGroupResponse {
 #[openapi(tag = "Groups")]
 #[post("/v2/groups", data = "<new_group>")]
 pub async fn post_group(
-    new_group: RequestResult<'_, CreateGroupResponse>,
+    new_group: RequestResult<'_, CreateGroupRequest>,
     user: UserClaim,
     group_service: &State<Arc<GroupService>>,
 ) -> ResponseResultData<CreateGroupResponse> {
