@@ -51,12 +51,14 @@ impl JwtService {
 
         cookies.add(
             Cookie::build((ACCESS_TOKEN_COOKIE, format!("Bearer {access_token}")))
+                // TODO: check correctness
                 .same_site(SameSite::Lax)
                 .build(),
         );
 
         cookies.add_private(
             Cookie::build((REFRESH_TOKEN_COOKIE, refresh_token))
+                // TODO: check correctness
                 .same_site(SameSite::Lax)
                 .build(),
         );
