@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use anyhow::{bail, Context, Result};
+use chrono::Utc;
 use rocket::async_trait;
 use uuid::Uuid;
 
@@ -44,6 +45,8 @@ impl GroupService {
                 owner_id: user_id.clone(),
                 name: name.to_string(),
                 api_key: Uuid::new_v4().to_string(),
+                created_at: Utc::now(),
+                updated_at: Utc::now(),
             })
             .await
             .context("failed to create new group in storage repo")

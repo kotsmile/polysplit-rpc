@@ -6,6 +6,9 @@ create table groups (
     owner_id uuid not null,
     api_key text not null default '',
 
+    updated_at timestamptz not null default now(),
+    created_at timestamptz not null default now(),
+
     primary key (id),
     constraint fk_owner foreign key(owner_id) references users(id)
 );

@@ -1,4 +1,5 @@
 use anyhow::{bail, Context, Result};
+use chrono::Local;
 use rocket::async_trait;
 use sqlx::{postgres::PgPoolOptions, Pool, Postgres};
 use uuid::Uuid;
@@ -34,11 +35,12 @@ impl GroupStorage for StorageRepo {
     async fn create_group(&self, new_group: &Group) -> Result<Option<Group>> {
         sqlx::query_as!(
             Group,
-            "insert into groups (id, name, owner_id, api_key) values ($1, $2, $3, $4) returning *;",
+            "insert into groups (id, name, owner_id, api_key, updated_at) values ($1, $2, $3, $4, $5) returning *;",
             new_group.id,
             new_group.name,
             new_group.owner_id,
             new_group.api_key,
+             Local::now(),
         )
         .fetch_optional(&self.pool)
         .await

@@ -9,7 +9,7 @@ use url::Url;
 use uuid::Uuid;
 
 use crate::{
-    models::{Group, NewRpc, Rpc, RpcVisibility},
+    models::{NewRpc, Rpc, RpcVisibility},
     services::{group::GroupService, jwt::UserClaim},
     util::controllers::{RequestResult, ResponseData, ResponseError, ResponseResultData},
 };
@@ -142,7 +142,7 @@ pub async fn update_group_api_key(
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
-pub struct ResponseGroup {
+pub struct GetGroupsResponse {
     pub id: Uuid,
     pub name: String,
 }
@@ -152,7 +152,7 @@ pub struct ResponseGroup {
 pub async fn get_groups(
     user: UserClaim,
     group_service: &State<Arc<GroupService>>,
-) -> ResponseResultData<Vec<ResponseGroup>> {
+) -> ResponseResultData<Vec<GetGroupsResponse>> {
     group_service
         .get_groups_for_user(&user.id)
         .await
@@ -164,7 +164,7 @@ pub async fn get_groups(
         })
         .map(|v| {
             v.iter()
-                .map(|g| ResponseGroup {
+                .map(|g| GetGroupsResponse {
                     id: g.id,
                     name: g.name.clone(),
                 })
@@ -173,13 +173,21 @@ pub async fn get_groups(
         .map(ResponseData::build)
 }
 
+#[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
+pub struct GetGroupResponse {
+    id: Uuid,
+    name: String,
+    api_key: String,
+    created_at: String,
+}
+
 #[openapi(tag = "Groups")]
 #[get("/v2/groups/<group_id>")]
 pub async fn get_group_id(
     group_id: Uuid,
     user: UserClaim,
     group_service: &State<Arc<GroupService>>,
-) -> ResponseResultData<Group> {
+) -> ResponseResultData<GetGroupResponse> {
     group_service
         .get_group_with_owner(&user.id, &group_id)
         .await
@@ -189,12 +197,22 @@ pub async fn get_group_id(
             error: format!("Failed to find group"),
             internal_error: Err(anyhow!("no group was found for: {group_id}: {err}")),
         })
-        .map(ResponseData::build)
+        .map(|v| {
+            ResponseData::build(GetGroupResponse {
+                id: v.id,
+                name: v.name,
+                api_key: v.api_key,
+                created_at: v.created_at.to_string(),
+            })
+        })
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
 pub struct CreateGroupResponse {
-    pub name: String,
+    id: Uuid,
+    name: String,
+    api_key: String,
+    created_at: String,
 }
 
 #[openapi(tag = "Groups")]
@@ -203,7 +221,7 @@ pub async fn post_group(
     new_group: RequestResult<'_, CreateGroupResponse>,
     user: UserClaim,
     group_service: &State<Arc<GroupService>>,
-) -> ResponseResultData<Group> {
+) -> ResponseResultData<CreateGroupResponse> {
     let new_group = new_group?.into_inner();
 
     group_service
@@ -222,5 +240,12 @@ pub async fn post_group(
                 internal_error: Err(anyhow!("failed to find created group")),
             })
         })
-        .map(ResponseData::build)
+        .map(|v| {
+            ResponseData::build(CreateGroupResponse {
+                id: v.id,
+                name: v.name,
+                api_key: v.api_key,
+                created_at: v.created_at.to_string(),
+            })
+        })
 }

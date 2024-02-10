@@ -1,6 +1,7 @@
 pub mod monitoring;
 pub mod proxy;
 
+use chrono::{DateTime, Utc};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -31,12 +32,14 @@ pub struct NewUser {
 // primary key (id),
 // constraint fk_owner foreign key(owner_id) references users(id)
 
-#[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Group {
     pub id: Uuid,
     pub name: String,
     pub owner_id: Uuid,
     pub api_key: String,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
