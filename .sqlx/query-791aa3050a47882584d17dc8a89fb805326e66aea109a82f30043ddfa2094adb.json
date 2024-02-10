@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "insert into groups (id, name, owner_id, api_key) values ($1, $2, $3, $4) returning *;",
+  "query": "insert into groups (id, name, owner_id, api_key, updated_at) values ($1, $2, $3, $4, $5) returning *;",
   "describe": {
     "columns": [
       {
@@ -22,6 +22,16 @@
         "ordinal": 3,
         "name": "api_key",
         "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "updated_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 5,
+        "name": "created_at",
+        "type_info": "Timestamptz"
       }
     ],
     "parameters": {
@@ -29,15 +39,18 @@
         "Uuid",
         "Varchar",
         "Uuid",
-        "Text"
+        "Text",
+        "Timestamptz"
       ]
     },
     "nullable": [
       false,
       false,
       false,
+      false,
+      false,
       false
     ]
   },
-  "hash": "fae23a01bd7e3051bac4fb5cf7a7719b3c59472be045c984c9a0b180c1351366"
+  "hash": "791aa3050a47882584d17dc8a89fb805326e66aea109a82f30043ddfa2094adb"
 }

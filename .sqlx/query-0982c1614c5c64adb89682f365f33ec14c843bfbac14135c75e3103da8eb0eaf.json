@@ -22,12 +22,24 @@
         "ordinal": 3,
         "name": "api_key",
         "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "updated_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 5,
+        "name": "created_at",
+        "type_info": "Timestamptz"
       }
     ],
     "parameters": {
       "Left": []
     },
     "nullable": [
+      false,
+      false,
       false,
       false,
       false,
