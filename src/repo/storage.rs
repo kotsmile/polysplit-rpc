@@ -59,6 +59,14 @@ impl GroupStorage for StorageRepo {
         .map(|_| {})
     }
 
+    async fn delete_group(&self, group_id: &Uuid) -> Result<()> {
+        sqlx::query!("delete from groups where id = $1;", group_id)
+            .execute(&self.pool)
+            .await
+            .context("failed to delete group")?;
+        Ok(())
+    }
+
     async fn get_groups_for_user(&self, user_id: &Uuid) -> Result<Vec<Group>> {
         sqlx::query_as!(Group, "select * from groups where owner_id = $1", user_id)
             .fetch_all(&self.pool)

@@ -56,6 +56,7 @@ pub fn setup_app(
                 v2::groups::get_groups,
                 v2::groups::get_group_id,
                 v2::groups::post_group,
+                v2::groups::delete_group,
                 v2::groups::get_group_rpcs,
                 v2::groups::post_group_rpc,
                 v2::groups::update_group_api_key

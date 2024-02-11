@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use anyhow::{anyhow, Context};
-use rocket::{get, http::Status, patch, post, State};
+use rocket::{delete, get, http::Status, patch, post, State};
 use rocket_okapi::openapi;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -205,6 +205,41 @@ pub async fn get_group_id(
                 created_at: v.created_at.to_string(),
             })
         })
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
+pub struct DeleteGroupResponse {
+    id: Uuid,
+}
+
+#[openapi(tag = "Groups")]
+#[delete("/v2/groups/<group_id>")]
+pub async fn delete_group(
+    group_id: Uuid,
+    user: UserClaim,
+    group_service: &State<Arc<GroupService>>,
+) -> ResponseResultData<DeleteGroupResponse> {
+    let _ = group_service
+        .get_group_with_owner(&user.id, &group_id)
+        .await
+        .context("failed to find group with owner id in group service")
+        .map_err(|err| ResponseError {
+            status: Status::NotFound,
+            error: format!("Failed to find group"),
+            internal_error: Err(anyhow!("no group was found for: {group_id}: {err}")),
+        })?;
+
+    group_service
+        .delete_group(&group_id)
+        .await
+        .context("failed to delete group in group service")
+        .map_err(|err| ResponseError {
+            status: Status::InternalServerError,
+            error: format!("Internal error"),
+            internal_error: Err(err),
+        })?;
+
+    Ok(ResponseData::build(DeleteGroupResponse { id: group_id }))
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]

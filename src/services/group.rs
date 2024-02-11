@@ -15,6 +15,7 @@ pub struct GroupService {
 #[async_trait]
 pub trait GroupStorage: Send + Sync + 'static {
     async fn create_group(&self, new_group: &Group) -> Result<Option<Group>>;
+    async fn delete_group(&self, group_id: &Uuid) -> Result<()>;
     async fn update_api_key(&self, group_id: &Uuid, api_key: &str) -> Result<()>;
     async fn get_groups_for_user(&self, user_id: &Uuid) -> Result<Vec<Group>>;
     async fn get_groups(&self) -> Result<Vec<Group>>;
@@ -50,6 +51,13 @@ impl GroupService {
             })
             .await
             .context("failed to create new group in storage repo")
+    }
+
+    pub async fn delete_group(&self, group_id: &Uuid) -> Result<()> {
+        self.group_storage
+            .delete_group(group_id)
+            .await
+            .context("failed to delete group from group service")
     }
 
     // TODO: remake on sql
