@@ -67,6 +67,7 @@ pub fn setup_app(
                 oauth2::get_refresh_token,
                 oauth2::get_provider_google,
                 oauth2::get_login_google,
+                oauth2::get_logout,
                 // v1
                 v1::chain::post_chain,
                 // v2

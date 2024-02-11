@@ -14,8 +14,11 @@ use uuid::Uuid;
 use crate::{
     models::NewUser,
     repo::config::ConfigRepo,
-    services::{jwt::JwtService, user::UserService},
-    util::controllers::ResponseError,
+    services::{
+        jwt::{JwtService, UserClaim},
+        user::UserService,
+    },
+    util::controllers::{ResponseData, ResponseError, ResponseResultData},
 };
 
 #[derive(Deserialize, Debug)]
@@ -133,4 +136,22 @@ pub async fn get_provider_google(
         })?;
 
     Ok(Redirect::to(config_repo.frontend_url_profile.clone()))
+}
+
+#[get("/auth/logout")]
+pub fn get_logout(
+    cookies: &CookieJar<'_>,
+    jwt_service: &State<Arc<JwtService>>,
+    _user: UserClaim,
+) -> ResponseResultData<String> {
+    jwt_service
+        .clear_cookies(cookies)
+        .context("failed to clear cookies")
+        .map_err(|err| ResponseError {
+            status: Status::InternalServerError,
+            error: format!("Internal error"),
+            internal_error: Err(err),
+        })?;
+
+    Ok(ResponseData::build("success".to_string()))
 }

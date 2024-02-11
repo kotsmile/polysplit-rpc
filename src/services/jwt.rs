@@ -77,6 +77,13 @@ impl JwtService {
         self.setup_cookies(cookies, refresh_claim.user.email, &refresh_claim.user.id)
             .context("failed to setup cookies")
     }
+
+    pub fn clear_cookies(&self, cookies: &CookieJar<'_>) -> Result<()> {
+        cookies.remove(ACCESS_TOKEN_COOKIE);
+        cookies.remove_private(REFRESH_TOKEN_COOKIE);
+
+        Ok(())
+    }
 }
 
 impl OpenApiFromRequest<'_> for UserClaim {
