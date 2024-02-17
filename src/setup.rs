@@ -37,7 +37,6 @@ pub fn setup_app(
         .manage(jwt_service)
         .manage(user_service)
         .manage(group_service)
-        // .manage(storage)
         .register("/", catchers![rocket_governor_catcher, not_authenticated])
         .mount(
             "/",
